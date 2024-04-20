@@ -21,9 +21,16 @@ class SetupForm {
         this.passwordInput.placeholder = "Password";
         this.inner.appendChild(this.passwordInput);
 
+        this.viewOnlyCheckboxLabel = document.createElement("label");
+        this.viewOnlyCheckbox = document.createElement("input");
+        this.viewOnlyCheckbox.type = "checkbox";
+        this.viewOnlyCheckboxLabel.appendChild(this.viewOnlyCheckbox);
+        this.viewOnlyCheckboxLabel.appendChild(document.createTextNode("View only"));
+        this.inner.appendChild(this.viewOnlyCheckboxLabel);
+
         this.submitButton = document.createElement("button");
         this.submitButton.type = "submit";
-        this.submitButton.innerText = "Login";
+        this.submitButton.appendChild(document.createTextNode("Login"));
         this.inner.appendChild(this.submitButton);
 
         this.inner.addEventListener("submit", this.handleSubmit.bind(this), { passive: false });
@@ -44,7 +51,7 @@ class SetupForm {
         event.preventDefault();
 
         const streamingWindow = new StreamingWindow();
-        streamingWindow.startStreaming(this.ipAddressInput.value, this.passwordInput.value);
+        streamingWindow.startStreaming(this.ipAddressInput.value, this.passwordInput.value, this.viewOnlyCheckbox.checked);
         this.inner.replaceWith(streamingWindow.inner);
     }
 }
@@ -65,7 +72,7 @@ class StreamingWindow {
         this.inner.style.minHeight = "0";
     }
 
-    startStreaming(ipAddress, password) {
+    startStreaming(ipAddress, password, viewOnly = false) {
         this.conn = new RTCPeerConnection({
             iceServers: [
                 {
@@ -91,19 +98,21 @@ class StreamingWindow {
                 mediaWindow.style.flex = "1";
                 mediaWindow.style.minWidth = "0";
 
-                mediaWindow.onclick = event => {
-                    mediaWindow.requestPointerLock();
-                };
+                if (!viewOnly) {
+                    mediaWindow.onclick = event => {
+                        mediaWindow.requestPointerLock();
+                    };
 
-                mediaWindow.addEventListener("mousemove", this.handleMouseMove.bind(this));
-                mediaWindow.addEventListener("mousedown", this.handleMouseDown.bind(this));
-                mediaWindow.addEventListener("mouseup", this.handleMouseUp.bind(this));
-                document.addEventListener("wheel", this.handleWheel.bind(this), { passive: false });
-                document.addEventListener("keydown", this.handleKeyDown.bind(this), { passive: false });
-                document.addEventListener("keyup", this.handleKeyUp.bind(this), { passive: false });
-                document.addEventListener("touchstart", this.handleTouchStart.bind(this), { passive: false });
-                document.addEventListener("touchend", this.handleTouchEnd.bind(this), { passive: false });
-                document.addEventListener("touchmove", this.handleTouchMove.bind(this), { passive: false });
+                    mediaWindow.addEventListener("mousemove", this.handleMouseMove.bind(this));
+                    mediaWindow.addEventListener("mousedown", this.handleMouseDown.bind(this));
+                    mediaWindow.addEventListener("mouseup", this.handleMouseUp.bind(this));
+                    document.addEventListener("wheel", this.handleWheel.bind(this), { passive: false });
+                    document.addEventListener("keydown", this.handleKeyDown.bind(this), { passive: false });
+                    document.addEventListener("keyup", this.handleKeyUp.bind(this), { passive: false });
+                    mediaWindow.addEventListener("touchstart", this.handleTouchStart.bind(this), { passive: false });
+                    mediaWindow.addEventListener("touchend", this.handleTouchEnd.bind(this), { passive: false });
+                    mediaWindow.addEventListener("touchmove", this.handleTouchMove.bind(this), { passive: false });
+                }
 
                 this.inner.appendChild(mediaWindow);
             }
