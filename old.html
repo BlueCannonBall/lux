@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>Lux</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="/manifest.json" />
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body style="display: flex; flex-direction: column;">
+    <form id="form" style="display: flex; padding: 8px; gap: 4px;" onSubmit="start(); return false;">
+        <input id="ip-address" type="text" placeholder="IP Address" style="flex: 1;">
+        <input id="password" type="password" placeholder="Password" style="flex: 1;">
+        <button type="submit">Start</button>
+    </form>
+    <div id="remote-videos" style="display: flex; flex: 1; min-height: 0;"></div>
+    <script src="index.js" type="text/javascript"></script>
+</body>
+
+</html>
