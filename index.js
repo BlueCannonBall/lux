@@ -2,6 +2,10 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function distance(x1, y1, x2, y2) {
+    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+}
+
 class SetupForm {
     constructor() {
         this.inner = document.createElement("form");
@@ -93,7 +97,7 @@ class StreamingWindow {
 
         this.conn.ontrack = event => {
             const mediaWindow = document.createElement(event.track.kind);
-            if (mediaWindow.tagName === "VIDEO") {
+            if (mediaWindow.tagName === "VIDEO") { // Ignore audio tracks, for now
                 mediaWindow.srcObject = event.streams[0];
 
                 mediaWindow.autoplay = true;
@@ -267,7 +271,8 @@ class StreamingWindow {
         if (event.changedTouches.length === 1 &&
             this.touches.length === 2 &&
             this.touches.every(touch => Date.now() - touch.startTime < 250) &&
-            this.touches.every(touch => Math.sqrt((touch.clientX - touch.initialClientX) ** 2 + (touch.clientY - touch.initialClientY) ** 2) < 25)) {
+            this.touches.every(touch => distance(touch.clientX, touch.clientY, touch.initialClientX, touch.initialClientY) < 25) &&
+            distance(this.touches[0].clientX, this.touches[0].clientY, this.touches[1].clientX, this.touches[1].clientY) > 50) {
             const message = {
                 button: 2,
             };
