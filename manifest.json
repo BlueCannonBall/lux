@@ -4,7 +4,8 @@
     "description": "A high-performance remote desktop app.",
     "start_url": "/",
     "display": "standalone",
-    "theme_color": "black",
+    "background_color": "#13171F",
+    "theme_color": "#13171F",
     "icons": [
         {
             "src": "icon.png",

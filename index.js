@@ -22,15 +22,19 @@ class SetupForm {
         this.inner.appendChild(this.passwordInput);
 
         this.viewOnlyCheckboxLabel = document.createElement("label");
+        this.viewOnlyCheckboxLabel.style.marginBottom = "var(--pico-spacing)";
+        this.inner.appendChild(this.viewOnlyCheckboxLabel);
+
         this.viewOnlyCheckbox = document.createElement("input");
         this.viewOnlyCheckbox.type = "checkbox";
         this.viewOnlyCheckboxLabel.appendChild(this.viewOnlyCheckbox);
-        this.viewOnlyCheckboxLabel.appendChild(document.createTextNode("View only"));
-        this.inner.appendChild(this.viewOnlyCheckboxLabel);
+
+        this.viewOnlyCheckboxLabelText = document.createTextNode("View only");
+        this.viewOnlyCheckboxLabel.appendChild(this.viewOnlyCheckboxLabelText);
 
         this.submitButton = document.createElement("button");
         this.submitButton.type = "submit";
-        this.submitButton.appendChild(document.createTextNode("Login"));
+        this.submitButton.innerText = "Login";
         this.inner.appendChild(this.submitButton);
 
         this.inner.addEventListener("submit", this.handleSubmit.bind(this), { passive: false });
@@ -225,6 +229,8 @@ class StreamingWindow {
                 identifier: newTouch.identifier,
                 clientX: newTouch.clientX,
                 clientY: newTouch.clientY,
+                initialClientX: newTouch.clientX,
+                initialClientY: newTouch.clientY,
                 startTime: Date.now(),
             });
         }
@@ -253,7 +259,6 @@ class StreamingWindow {
 
             message.type = "mousedown";
             this.sendChannel.send(JSON.stringify(message));
-            await sleep(20);
             message.type = "mouseup";
             this.sendChannel.send(JSON.stringify(message));
         }
@@ -261,14 +266,14 @@ class StreamingWindow {
         // Handle two-finger tap as right click
         if (event.changedTouches.length === 1 &&
             this.touches.length === 2 &&
-            this.touches.every(touch => Date.now() - touch.startTime < 125)) {
+            this.touches.every(touch => Date.now() - touch.startTime < 250) &&
+            this.touches.every(touch => Math.sqrt((touch.clientX - touch.initialClientX) ** 2 + (touch.clientY - touch.initialClientY) ** 2) < 25)) {
             const message = {
                 button: 2,
             };
 
             message.type = "mousedown";
             this.sendChannel.send(JSON.stringify(message));
-            await sleep(20);
             message.type = "mouseup";
             this.sendChannel.send(JSON.stringify(message));
 
@@ -283,6 +288,11 @@ class StreamingWindow {
             };
 
             this.sendChannel.send(JSON.stringify(message));
+        }
+
+        // Make lone touches linger to improve two-finger tap detection
+        if (this.touches.length === 1) {
+            await sleep(125);
         }
 
         this.touches = this.touches.filter(touch => {
@@ -312,8 +322,8 @@ class StreamingWindow {
         } else {
             message = {
                 type: "mousemove",
-                x: event.touches[0].clientX - this.touches[0].clientX,
-                y: event.touches[0].clientY - this.touches[0].clientY,
+                x: (event.touches[0].clientX - this.touches[0].clientX) * 1.5,
+                y: (event.touches[0].clientY - this.touches[0].clientY) * 1.5,
             };
         }
 
