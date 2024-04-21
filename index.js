@@ -89,11 +89,13 @@ class StreamingWindow {
             ],
         });
 
-        this.sendChannel = this.conn.createDataChannel("input");
-        this.sendChannel.onclose = () => {
-            alert("Data channel closed.");
-            window.location.reload();
-        };
+        if (!viewOnly) {
+            this.sendChannel = this.conn.createDataChannel("input");
+            this.sendChannel.onclose = () => {
+                alert("Data channel closed.");
+                window.location.reload();
+            };
+        }
 
         this.conn.ontrack = event => {
             const mediaWindow = document.createElement(event.track.kind);
