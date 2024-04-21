@@ -272,7 +272,7 @@ class StreamingWindow {
             this.touches.length === 2 &&
             this.touches.every(touch => Date.now() - touch.startTime < 250) &&
             this.touches.every(touch => distance(touch.clientX, touch.clientY, touch.initialClientX, touch.initialClientY) < 25) &&
-            distance(this.touches[0].clientX, this.touches[0].clientY, this.touches[1].clientX, this.touches[1].clientY) > 50) {
+            distance(this.touches[0].clientX, this.touches[0].clientY, this.touches[1].clientX, this.touches[1].clientY) > 15) {
             const message = {
                 button: 2,
             };
