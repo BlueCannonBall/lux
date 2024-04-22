@@ -92,7 +92,7 @@ class StreamingWindow {
         if (!viewOnly) {
             this.sendChannel = this.conn.createDataChannel("input");
             this.sendChannel.onclose = () => {
-                alert("Data channel closed.");
+                alert("Input data channel closed.");
                 window.location.reload();
             };
         }
@@ -144,7 +144,7 @@ class StreamingWindow {
                     window.location.reload();
                 });
 
-                if (resp.status == 200) {
+                if (resp.status === 200) {
                     const answer = await resp.text();
                     try {
                         this.conn.setRemoteDescription(new RTCSessionDescription(JSON.parse(atob(JSON.parse(answer).Offer))));
