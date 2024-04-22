@@ -121,6 +121,7 @@ class StreamingWindow {
                     document.addEventListener("keyup", this.handleKeyUp.bind(this), { passive: false });
                     mediaWindow.addEventListener("touchstart", this.handleTouchStart.bind(this), { passive: false });
                     mediaWindow.addEventListener("touchend", this.handleTouchEnd.bind(this), { passive: false });
+                    mediaWindow.addEventListener("touchcancel", this.handleTouchEnd.bind(this), { passive: false });
                     mediaWindow.addEventListener("touchmove", this.handleTouchMove.bind(this), { passive: false });
                 }
 
