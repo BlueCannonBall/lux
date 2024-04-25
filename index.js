@@ -6,6 +6,35 @@ function distance(x1, y1, x2, y2) {
     return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }
 
+function positionInVideo(x, y, video) {
+    const videoAspectRatio = video.videoWidth / video.videoHeight;
+    const windowAspectRatio = video.offsetWidth / video.offsetHeight;
+    if (videoAspectRatio > windowAspectRatio) {
+        return {
+            x: x / (video.offsetWidth / video.videoWidth),
+            y: (y - ((1.0 - windowAspectRatio / videoAspectRatio) * video.offsetHeight / 2)) / (video.offsetWidth / video.videoWidth),
+        };
+    } else if (videoAspectRatio < windowAspectRatio) {
+        return {
+            x: x / (video.offsetWidth / video.videoWidth) - (video.offsetWidth - video.videoWidth) / 2 / (video.offsetWidth / video.videoWidth),
+            y: y / (video.offsetHeight / video.videoHeight),
+        };
+    } else {
+        return {
+            x: x / (video.offsetWidth / video.videoWidth),
+            y: y / (video.offsetHeight / video.videoHeight),
+        };
+    }
+}
+
+function touchListAsArray(touchList) {
+    const ret = [];
+    for (const touch of touchList) {
+        ret.push(touch);
+    }
+    return ret;
+}
+
 class SetupForm {
     constructor() {
         this.inner = document.createElement("form");
@@ -98,34 +127,35 @@ class StreamingWindow {
         }
 
         this.conn.ontrack = event => {
-            const mediaWindow = document.createElement(event.track.kind);
-            if (mediaWindow.tagName === "VIDEO") { // Ignore audio tracks, for now
-                mediaWindow.srcObject = event.streams[0];
+            const media = document.createElement(event.track.kind);
+            if (media.tagName === "VIDEO") { // Ignore audio tracks, for now
+                this.video = media;
+                this.video.srcObject = event.streams[0];
 
-                mediaWindow.autoplay = true;
-                mediaWindow.controls = false;
+                this.video.autoplay = true;
+                this.video.controls = false;
 
-                mediaWindow.style.flex = "1";
-                mediaWindow.style.minWidth = "0";
+                this.video.style.flex = "1";
+                this.video.style.minWidth = "0";
 
                 if (!viewOnly) {
-                    mediaWindow.onclick = event => {
-                        mediaWindow.requestPointerLock();
+                    this.video.onclick = event => {
+                        this.video.requestPointerLock();
                     };
 
-                    mediaWindow.addEventListener("mousemove", this.handleMouseMove.bind(this));
-                    mediaWindow.addEventListener("mousedown", this.handleMouseDown.bind(this));
-                    mediaWindow.addEventListener("mouseup", this.handleMouseUp.bind(this));
+                    this.video.addEventListener("mousemove", this.handleMouseMove.bind(this));
+                    this.video.addEventListener("mousedown", this.handleMouseDown.bind(this));
+                    this.video.addEventListener("mouseup", this.handleMouseUp.bind(this));
                     document.addEventListener("wheel", this.handleWheel.bind(this), { passive: false });
                     document.addEventListener("keydown", this.handleKeyDown.bind(this), { passive: false });
                     document.addEventListener("keyup", this.handleKeyUp.bind(this), { passive: false });
-                    mediaWindow.addEventListener("touchstart", this.handleTouchStart.bind(this), { passive: false });
-                    mediaWindow.addEventListener("touchend", this.handleTouchEnd.bind(this), { passive: false });
-                    mediaWindow.addEventListener("touchcancel", this.handleTouchEnd.bind(this), { passive: false });
-                    mediaWindow.addEventListener("touchmove", this.handleTouchMove.bind(this), { passive: false });
+                    this.video.addEventListener("touchstart", this.handleTouchStart.bind(this), { passive: false });
+                    this.video.addEventListener("touchend", this.handleTouchEnd.bind(this), { passive: false });
+                    this.video.addEventListener("touchcancel", this.handleTouchEnd.bind(this), { passive: false });
+                    this.video.addEventListener("touchmove", this.handleTouchMove.bind(this), { passive: false });
                 }
 
-                this.inner.appendChild(mediaWindow);
+                this.inner.appendChild(this.video);
             }
         };
 
@@ -238,17 +268,29 @@ class StreamingWindow {
                 clientY: newTouch.clientY,
                 initialClientX: newTouch.clientX,
                 initialClientY: newTouch.clientY,
+                force: newTouch.force,
                 startTime: Date.now(),
             });
         }
 
         // Start drag
-        if (this.touches.length === 3) {
+        let penTouch;
+        if ((penTouch = this.touches.findIndex(touch => touch.force)) !== -1) {
+            let message = {
+                type: "mousemoveabs",
+                ...positionInVideo(event.touches[penTouch].clientX, event.touches[penTouch].clientY, this.video),
+            };
+            this.sendChannel.send(JSON.stringify(message));
+            message = {
+                type: "mousedown",
+                button: 0,
+            };
+            this.sendChannel.send(JSON.stringify(message));
+        } else if (this.touches.length === 3) {
             const message = {
                 type: "mousedown",
                 button: 0,
             };
-
             this.sendChannel.send(JSON.stringify(message));
         }
     }
@@ -289,7 +331,10 @@ class StreamingWindow {
         }
 
         // End drag
-        if (this.touches.length === 3) {
+        let penTouch;
+        if (((penTouch = this.touches.find(touch => touch.force)) &&
+            touchListAsArray(event.changedTouches).some(touch => touch.identifier === penTouch.identifier)) ||
+            this.touches.length === 3) {
             const message = {
                 type: "mouseup",
                 button: 0,
@@ -328,11 +373,19 @@ class StreamingWindow {
                 y: (event.touches[0].clientY - this.touches[0].clientY) * 8,
             };
         } else {
-            message = {
-                type: "mousemove",
-                x: (event.touches[0].clientX - this.touches[0].clientX) * 1.5,
-                y: (event.touches[0].clientY - this.touches[0].clientY) * 1.5,
-            };
+            let penTouch;
+            if ((penTouch = this.touches.findIndex(touch => touch.force)) !== -1) {
+                message = {
+                    type: "mousemoveabs",
+                    ...positionInVideo(event.touches[penTouch].clientX, event.touches[penTouch].clientY, this.video),
+                };
+            } else {
+                message = {
+                    type: "mousemove",
+                    x: (event.touches[0].clientX - this.touches[0].clientX) * 1.5,
+                    y: (event.touches[0].clientY - this.touches[0].clientY) * 1.5,
+                };
+            }
         }
 
         this.sendChannel.send(JSON.stringify(message));
