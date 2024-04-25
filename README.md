@@ -8,7 +8,7 @@ Lux cliens videonis-fluentis est. Lux potest iungere ad [Tenebram](https://githu
 
 Lux is a simple static site, and only requires a tool like [shost](https://github.com/BlueCannonBall/shost) to host.
 
-Lux locus stabilis simplex, et tantum instrumentum requirit sicut [shost](https://github.com/BlueCannonBall/shost).
+Lux locus stabilis simplex est, et tantum instrumentum requirit sicut [shost](https://github.com/BlueCannonBall/shost).
 
 ## Screenshot
 
