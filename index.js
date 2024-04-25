@@ -16,7 +16,7 @@ function positionInVideo(x, y, video) {
         };
     } else if (videoAspectRatio < windowAspectRatio) {
         return {
-            x: x / (video.offsetWidth / video.videoWidth) - (video.offsetWidth - video.videoWidth) / 2 / (video.offsetWidth / video.videoWidth),
+            x: (x - ((1.0 - videoAspectRatio / windowAspectRatio) * video.offsetWidth / 2)) / (video.offsetHeight / video.videoHeight),
             y: y / (video.offsetHeight / video.videoHeight),
         };
     } else {
