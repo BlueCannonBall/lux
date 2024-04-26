@@ -202,7 +202,6 @@ class StreamingWindow {
             x: event.movementX,
             y: event.movementY,
         };
-
         this.sendChannel.send(JSON.stringify(message));
     }
 
@@ -211,7 +210,6 @@ class StreamingWindow {
             type: "mousedown",
             button: event.button,
         };
-
         this.sendChannel.send(JSON.stringify(message));
     }
 
@@ -220,7 +218,6 @@ class StreamingWindow {
             type: "mouseup",
             button: event.button,
         };
-
         this.sendChannel.send(JSON.stringify(message));
     }
 
@@ -232,7 +229,6 @@ class StreamingWindow {
             x: event.deltaX,
             y: event.deltaY,
         };
-
         this.sendChannel.send(JSON.stringify(message));
     }
 
@@ -243,7 +239,6 @@ class StreamingWindow {
             type: "keydown",
             key: event.code,
         };
-
         this.sendChannel.send(JSON.stringify(message));
     }
 
@@ -254,7 +249,6 @@ class StreamingWindow {
             type: "keyup",
             key: event.code,
         };
-
         this.sendChannel.send(JSON.stringify(message));
     }
 
@@ -281,6 +275,7 @@ class StreamingWindow {
                 ...positionInVideo(event.touches[penTouch].clientX, event.touches[penTouch].clientY, this.video),
             };
             this.sendChannel.send(JSON.stringify(message));
+            
             message = {
                 type: "mousedown",
                 button: 0,
@@ -305,7 +300,6 @@ class StreamingWindow {
             const message = {
                 button: 0,
             };
-
             message.type = "mousedown";
             this.sendChannel.send(JSON.stringify(message));
             message.type = "mouseup";
@@ -321,7 +315,6 @@ class StreamingWindow {
             const message = {
                 button: 2,
             };
-
             message.type = "mousedown";
             this.sendChannel.send(JSON.stringify(message));
             message.type = "mouseup";
@@ -339,7 +332,6 @@ class StreamingWindow {
                 type: "mouseup",
                 button: 0,
             };
-
             this.sendChannel.send(JSON.stringify(message));
         }
 
@@ -387,7 +379,6 @@ class StreamingWindow {
                 };
             }
         }
-
         this.sendChannel.send(JSON.stringify(message));
 
         for (const touch of this.touches) {
