@@ -97,6 +97,9 @@ class StreamingWindow {
     constructor() {
         this.inner = document.createElement("div");
 
+        this.wheelX = 0;
+        this.wheelY = 0;
+
         this.touches = [];
         this.lastRightClickTime = 0;
 
@@ -236,12 +239,22 @@ class StreamingWindow {
     handleWheel(event) {
         event.preventDefault();
 
-        const message = {
-            type: "wheel",
-            x: event.deltaX,
-            y: event.deltaY,
-        };
-        this.sendChannel.send(JSON.stringify(message));
+        this.wheelX += event.deltaX;
+        this.wheelY += event.deltaY;
+
+        if (this.wheelX < 120 && this.wheelY < 120) {
+            return;
+        } else {
+            const message = {
+                type: "wheel",
+                x: this.wheelX,
+                y: this.wheelY,
+            };
+            this.sendChannel.send(JSON.stringify(message));
+
+            this.wheelX = this.wheelX >= 120 ? 0 : this.wheelX;
+            this.wheelY = this.wheelY >= 120 ? 0 : this.wheelY;
+        }
     }
 
     handleKeyDown(event) {
@@ -357,7 +370,7 @@ class StreamingWindow {
                     };
                     this.sendChannel.send(JSON.stringify(message));
                 } else if (Date.now() - this.lastRightClickTime > 125 &&
-                    Date.now() - this.touches[0].startTime < 125) {
+                    Date.now() - this.touches[0].startTime <= 125) {
                     const message = {
                         button: 0,
                     };
@@ -365,17 +378,17 @@ class StreamingWindow {
                     this.sendChannel.send(JSON.stringify(message));
                     message.type = "mouseup";
                     this.sendChannel.send(JSON.stringify(message));
+
+                    // Make lone touches linger to improve two-finger tap detection
+                    await sleep(125);
                 }
-                
-                // Make lone touches linger to improve two-finger tap detection
-                await sleep(125);
                 break;
             }
 
             case 2: {
-                if (this.touches.every(touch => Date.now() - touch.startTime < 250) &&
-                    this.touches.every(touch => distance(touch.clientX, touch.clientY, touch.initialClientX, touch.initialClientY) < 25) &&
-                    distance(this.touches[0].clientX, this.touches[0].clientY, this.touches[1].clientX, this.touches[1].clientY) > 15) {
+                if (this.touches.every(touch => Date.now() - touch.startTime <= 250) &&
+                    this.touches.every(touch => distance(touch.clientX, touch.clientY, touch.initialClientX, touch.initialClientY) <= 25) &&
+                    distance(this.touches[0].clientX, this.touches[0].clientY, this.touches[1].clientX, this.touches[1].clientY) >= 15) {
                     const message = {
                         button: 2,
                     };
@@ -435,7 +448,7 @@ class StreamingWindow {
             }
 
             case 2: {
-                if (this.touches.every(touch => Date.now() - touch.startTime > 25)) {
+                if (this.touches.every(touch => Date.now() - touch.startTime >= 25)) {
                     if (Math.abs(updatedTouches[0].clientX - this.touches[0].clientX) < 15 &&
                         Math.abs(updatedTouches[0].clientY - this.touches[0].clientY) < 15) {
                         return;
