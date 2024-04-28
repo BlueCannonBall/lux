@@ -242,7 +242,7 @@ class StreamingWindow {
         this.wheelX += event.deltaX;
         this.wheelY += event.deltaY;
 
-        if (this.wheelX >= 120 || this.wheelY >= 120) {
+        if (Math.abs(this.wheelX) >= 120 || Math.abs(this.wheelY) >= 120) {
             const message = {
                 type: "wheel",
                 x: this.wheelX,
