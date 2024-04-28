@@ -242,9 +242,7 @@ class StreamingWindow {
         this.wheelX += event.deltaX;
         this.wheelY += event.deltaY;
 
-        if (this.wheelX < 120 && this.wheelY < 120) {
-            return;
-        } else {
+        if (this.wheelX >= 120 || this.wheelY >= 120) {
             const message = {
                 type: "wheel",
                 x: this.wheelX,
@@ -252,8 +250,8 @@ class StreamingWindow {
             };
             this.sendChannel.send(JSON.stringify(message));
 
-            this.wheelX = this.wheelX >= 120 ? 0 : this.wheelX;
-            this.wheelY = this.wheelY >= 120 ? 0 : this.wheelY;
+            this.wheelX = 0;
+            this.wheelY = 0;
         }
     }
 
