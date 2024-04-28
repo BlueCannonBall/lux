@@ -196,6 +196,18 @@ class StreamingWindow {
         this.conn.createOffer().then(offer => this.conn.setLocalDescription(offer));
     }
 
+    pushTouch(touch) {
+        this.touches.push({
+            identifier: touch.identifier,
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            initialClientX: touch.clientX,
+            initialClientY: touch.clientY,
+            force: touch.force,
+            startTime: Date.now(),
+        });
+    }
+
     handleMouseMove(event) {
         const message = {
             type: "mousemove",
@@ -254,94 +266,142 @@ class StreamingWindow {
 
     handleTouchStart(event) {
         event.preventDefault();
+        const newTouches = touchListAsArray(event.changedTouches);
 
-        for (const newTouch of event.changedTouches) {
-            this.touches.push({
-                identifier: newTouch.identifier,
-                clientX: newTouch.clientX,
-                clientY: newTouch.clientY,
-                initialClientX: newTouch.clientX,
-                initialClientY: newTouch.clientY,
-                force: newTouch.force,
-                startTime: Date.now(),
-            });
+        switch (this.touches.length) {
+            case 0: {
+                let penTouch;
+                if ((penTouch = newTouches.findIndex(touch => touch.force)) !== -1) {
+                    this.touches = [];
+                    this.pushTouch(newTouches[penTouch]);
+
+                    // Start drag
+                    let message = {
+                        type: "mousemoveabs",
+                        ...positionInVideo(this.touches[0].clientX, this.touches[0].clientY, this.video),
+                    };
+                    this.sendChannel.send(JSON.stringify(message));
+                    message = {
+                        type: "mousedown",
+                        button: 0,
+                    };
+                    this.sendChannel.send(JSON.stringify(message));
+
+                    return;
+                }
+                break;
+            }
+
+            default: {
+                let penTouch;
+                if ((penTouch = newTouches.findIndex(touch => touch.force)) !== -1 &&
+                    this.touches.every(touch => !touch.force)) {
+                    // Clear existing touches
+                    const message = {
+                        type: "mouseup",
+                    };
+                    message.button = 0;
+                    this.sendChannel.send(JSON.stringify(message));
+                    message.button = 2;
+                    this.sendChannel.send(JSON.stringify(message));
+                    
+                    this.touches = [];
+                    this.pushTouch(newTouches[penTouch]);
+
+                    // Start drag
+                    message = {
+                        type: "mousemoveabs",
+                        ...positionInVideo(this.touches[0].clientX, this.touches[0].clientY, this.video),
+                    };
+                    this.sendChannel.send(JSON.stringify(message));
+                    message = {
+                        type: "mousedown",
+                        button: 0,
+                    };
+                    this.sendChannel.send(JSON.stringify(message));
+
+                    return;
+                }
+                break;
+            }
         }
 
-        // Start drag
-        let penTouch;
-        if ((penTouch = this.touches.findIndex(touch => touch.force)) !== -1) {
-            let message = {
-                type: "mousemoveabs",
-                ...positionInVideo(event.touches[penTouch].clientX, event.touches[penTouch].clientY, this.video),
-            };
-            this.sendChannel.send(JSON.stringify(message));
-            
-            message = {
-                type: "mousedown",
-                button: 0,
-            };
-            this.sendChannel.send(JSON.stringify(message));
-        } else if (this.touches.length === 3) {
-            const message = {
-                type: "mousedown",
-                button: 0,
-            };
-            this.sendChannel.send(JSON.stringify(message));
+        for (const newTouch of newTouches) {
+            this.pushTouch(newTouch);
+        }
+
+        switch (this.touches.length) {
+            case 3: {
+                // Start drag
+                const message = {
+                    type: "mousedown",
+                    button: 0,
+                };
+                this.sendChannel.send(JSON.stringify(message));
+                break;
+            }
         }
     }
 
     async handleTouchEnd(event) {
         event.preventDefault();
+        const deletedTouches = touchListAsArray(event.changedTouches);
 
-        // Handle normal click
-        if (Date.now() - this.lastRightClickTime > 125 &&
-            this.touches.length === 1 &&
-            Date.now() - this.touches[0].startTime < 125) {
-            const message = {
-                button: 0,
-            };
-            message.type = "mousedown";
-            this.sendChannel.send(JSON.stringify(message));
-            message.type = "mouseup";
-            this.sendChannel.send(JSON.stringify(message));
-        }
+        switch (this.touches.length) {
+            case 1: {
+                if (this.touches[0].force) {
+                    // End drag
+                    const message = {
+                        type: "mouseup",
+                        button: 0,
+                    };
+                    this.sendChannel.send(JSON.stringify(message));
+                } else if (Date.now() - this.lastRightClickTime > 125 &&
+                    Date.now() - this.touches[0].startTime < 125) {
+                    const message = {
+                        button: 0,
+                    };
+                    message.type = "mousedown";
+                    this.sendChannel.send(JSON.stringify(message));
+                    message.type = "mouseup";
+                    this.sendChannel.send(JSON.stringify(message));
+                }
+                
+                // Make lone touches linger to improve two-finger tap detection
+                await sleep(125);
+                break;
+            }
 
-        // Handle two-finger tap as right click
-        if (event.changedTouches.length === 1 &&
-            this.touches.length === 2 &&
-            this.touches.every(touch => Date.now() - touch.startTime < 250) &&
-            this.touches.every(touch => distance(touch.clientX, touch.clientY, touch.initialClientX, touch.initialClientY) < 25) &&
-            distance(this.touches[0].clientX, this.touches[0].clientY, this.touches[1].clientX, this.touches[1].clientY) > 15) {
-            const message = {
-                button: 2,
-            };
-            message.type = "mousedown";
-            this.sendChannel.send(JSON.stringify(message));
-            message.type = "mouseup";
-            this.sendChannel.send(JSON.stringify(message));
+            case 2: {
+                if (this.touches.every(touch => Date.now() - touch.startTime < 250) &&
+                    this.touches.every(touch => distance(touch.clientX, touch.clientY, touch.initialClientX, touch.initialClientY) < 25) &&
+                    distance(this.touches[0].clientX, this.touches[0].clientY, this.touches[1].clientX, this.touches[1].clientY) > 15) {
+                    const message = {
+                        button: 2,
+                    };
+                    message.type = "mousedown";
+                    this.sendChannel.send(JSON.stringify(message));
+                    message.type = "mouseup";
+                    this.sendChannel.send(JSON.stringify(message));
 
-            this.lastRightClickTime = Date.now();
-        }
+                    this.lastRightClickTime = Date.now();
+                }
+                break;
+            }
 
-        // End drag
-        let penTouch;
-        if (((penTouch = this.touches.find(touch => touch.force)) &&
-            touchListAsArray(event.changedTouches).some(touch => touch.identifier === penTouch.identifier)) ||
-            this.touches.length === 3) {
-            const message = {
-                type: "mouseup",
-                button: 0,
-            };
-            this.sendChannel.send(JSON.stringify(message));
-        }
-
-        // Make lone touches linger to improve two-finger tap detection
-        if (this.touches.length === 1) {
-            await sleep(125);
+            case 3: {
+                // End drag
+                const message = {
+                    type: "mouseup",
+                    button: 0,
+                };
+                this.sendChannel.send(JSON.stringify(message));
+                break;
+            }
         }
 
         this.touches = this.touches.filter(touch => {
-            for (const deletedTouch of event.changedTouches) {
+            for (const deletedTouch of deletedTouches) {
                 if (touch.identifier === deletedTouch.identifier) {
                     return false;
                 }
@@ -352,37 +412,58 @@ class StreamingWindow {
 
     handleTouchMove(event) {
         event.preventDefault();
+        const updatedTouches = touchListAsArray(event.touches);
+        const movedTouches = touchListAsArray(event.changedTouches);
 
-        let message;
-        if (event.touches.length === 2 && this.touches.every(touch => Date.now() - touch.startTime > 25)) {
-            if (Math.abs(event.touches[0].clientX - this.touches[0].clientX) < 15 &&
-                Math.abs(event.touches[0].clientY - this.touches[0].clientY) < 15) {
-                return;
+        switch (this.touches.length) {
+            case 1: {
+                let message;
+                if (this.touches[0].force) {
+                    message = {
+                        type: "mousemoveabs",
+                        ...positionInVideo(updatedTouches[0].clientX, updatedTouches[0].clientY, this.video),
+                    };
+                } else {
+                    message = {
+                        type: "mousemove",
+                        x: (updatedTouches[0].clientX - this.touches[0].clientX) * 1.5,
+                        y: (updatedTouches[0].clientY - this.touches[0].clientY) * 1.5,
+                    };
+                }
+                this.sendChannel.send(JSON.stringify(message));
+                break;
             }
-            message = {
-                type: "wheel",
-                x: (event.touches[0].clientX - this.touches[0].clientX) * 8,
-                y: (event.touches[0].clientY - this.touches[0].clientY) * 8,
-            };
-        } else {
-            let penTouch;
-            if ((penTouch = this.touches.findIndex(touch => touch.force)) !== -1) {
-                message = {
-                    type: "mousemoveabs",
-                    ...positionInVideo(event.touches[penTouch].clientX, event.touches[penTouch].clientY, this.video),
-                };
-            } else {
-                message = {
+
+            case 2: {
+                if (this.touches.every(touch => Date.now() - touch.startTime > 25)) {
+                    if (Math.abs(updatedTouches[0].clientX - this.touches[0].clientX) < 15 &&
+                        Math.abs(updatedTouches[0].clientY - this.touches[0].clientY) < 15) {
+                        return;
+                    }
+
+                    const message = {
+                        type: "wheel",
+                        x: (updatedTouches[0].clientX - this.touches[0].clientX) * 8,
+                        y: (updatedTouches[0].clientY - this.touches[0].clientY) * 8,
+                    };
+                    this.sendChannel.send(JSON.stringify(message));
+                }
+                break;
+            }
+
+            case 3: {
+                const message = {
                     type: "mousemove",
-                    x: (event.touches[0].clientX - this.touches[0].clientX) * 1.5,
-                    y: (event.touches[0].clientY - this.touches[0].clientY) * 1.5,
+                    x: (updatedTouches[0].clientX - this.touches[0].clientX) * 1.5,
+                    y: (updatedTouches[0].clientY - this.touches[0].clientY) * 1.5,
                 };
+                this.sendChannel.send(JSON.stringify(message));
+                break;
             }
         }
-        this.sendChannel.send(JSON.stringify(message));
 
         for (const touch of this.touches) {
-            for (const movedTouch of event.changedTouches) {
+            for (const movedTouch of movedTouches) {
                 if (touch.identifier === movedTouch.identifier) {
                     touch.clientX = movedTouch.clientX;
                     touch.clientY = movedTouch.clientY;
