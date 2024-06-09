@@ -196,8 +196,7 @@ class StreamingWindow {
             }
         };
 
-        // Offer to receive 1 video track and 1 audio track
-        this.conn.addTransceiver("audio", { direction: "recvonly" });
+        // Offer to receive 1 video track
         this.conn.addTransceiver("video", { direction: "recvonly" });
         this.conn.createOffer().then(offer => this.conn.setLocalDescription(offer));
     }
