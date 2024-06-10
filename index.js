@@ -132,6 +132,13 @@ class StreamingWindow {
         this.conn.ontrack = event => {
             const media = document.createElement(event.track.kind);
             if (media.tagName === "VIDEO") { // Ignore audio tracks, for now
+                const receivers = this.conn.getReceivers();
+                for (const receiver of receivers) {
+                    receiver.jitterBufferTarget = 0;
+                    receiver.jitterBufferDelayHint = 0;
+                    receiver.playoutDelayHint = 0;
+                }
+
                 event.transceiver.receiver.jitterBufferTarget = 0;
                 event.transceiver.receiver.jitterBufferDelayHint = 0;
                 event.transceiver.receiver.playoutDelayHint = 0;
