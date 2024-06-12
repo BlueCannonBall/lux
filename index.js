@@ -324,7 +324,7 @@ class StreamingWindow {
                     }
 
                     // Clear existing touches
-                    const message = {
+                    let message = {
                         type: "mouseup",
                     };
                     message.button = 0;
