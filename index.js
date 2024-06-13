@@ -130,8 +130,8 @@ class StreamingWindow {
         }, 1);
 
         if (!viewOnly) {
-            this.orderedChannel = this.conn.createDataChannel("button-input", { ordered: true });
-            this.unorderedChannel = this.conn.createDataChannel("movement-input", { ordered: false });
+            this.orderedChannel = this.conn.createDataChannel("ordered-input", { ordered: true });
+            this.unorderedChannel = this.conn.createDataChannel("unordered-input", { ordered: false });
             this.orderedChannel.onclose = this.unorderedChannel.onclose = () => {
                 alert("An input data channel has closed.");
                 window.location.reload();
