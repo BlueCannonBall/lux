@@ -354,7 +354,9 @@ class StreamingWindow {
         }
 
         for (const newTouch of newTouches) {
-            this.pushTouch(newTouch);
+            if (newTouch.radiusX <= 75 && touch.radiusY <= 75) {
+                this.pushTouch(newTouch);
+            }
         }
 
         switch (this.touches.length) {
