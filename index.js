@@ -54,16 +54,16 @@ class SetupForm {
         this.passwordInput.placeholder = "Password";
         this.inner.appendChild(this.passwordInput);
 
-        this.viewOnlyCheckboxLabel = document.createElement("label");
-        this.viewOnlyCheckboxLabel.style.marginBottom = "var(--pico-spacing)";
-        this.inner.appendChild(this.viewOnlyCheckboxLabel);
+        this.clientSideMouseCheckboxLabel = document.createElement("label");
+        this.clientSideMouseCheckboxLabel.style.marginBottom = "var(--pico-spacing)";
+        this.inner.appendChild(this.clientSideMouseCheckboxLabel);
 
-        this.viewOnlyCheckbox = document.createElement("input");
-        this.viewOnlyCheckbox.type = "checkbox";
-        this.viewOnlyCheckboxLabel.appendChild(this.viewOnlyCheckbox);
+        this.clientSideMouseCheckbox = document.createElement("input");
+        this.clientSideMouseCheckbox.type = "checkbox";
+        this.clientSideMouseCheckboxLabel.appendChild(this.clientSideMouseCheckbox);
 
-        this.viewOnlyCheckboxLabelText = document.createTextNode("View only");
-        this.viewOnlyCheckboxLabel.appendChild(this.viewOnlyCheckboxLabelText);
+        this.clientSideMouseCheckboxLabelText = document.createTextNode("Client-side mouse");
+        this.clientSideMouseCheckboxLabel.appendChild(this.clientSideMouseCheckboxLabelText);
 
         this.submitButton = document.createElement("button");
         this.submitButton.type = "submit";
@@ -87,15 +87,17 @@ class SetupForm {
     handleSubmit(event) {
         event.preventDefault();
 
-        const streamingWindow = new StreamingWindow();
-        streamingWindow.startStreaming(this.ipAddressInput.value, this.passwordInput.value, this.viewOnlyCheckbox.checked);
+        const streamingWindow = new StreamingWindow(this.clientSideMouseCheckbox.checked);
+        streamingWindow.startStreaming(this.ipAddressInput.value, this.passwordInput.value);
         this.inner.replaceWith(streamingWindow.inner);
     }
 }
 
 class StreamingWindow {
-    constructor() {
+    constructor(clientSideMouse = false) {
         this.inner = document.createElement("div");
+
+        this.clientSideMouse = clientSideMouse;
 
         this.wheelX = 0;
         this.wheelY = 0;
@@ -112,7 +114,7 @@ class StreamingWindow {
         this.inner.style.minHeight = "0";
     }
 
-    startStreaming(ipAddress, password, viewOnly = false) {
+    startStreaming(ipAddress, password) {
         this.conn = new RTCPeerConnection({
             iceServers: [
                 {
@@ -129,14 +131,12 @@ class StreamingWindow {
             }
         }, 1);
 
-        if (!viewOnly) {
-            this.orderedChannel = this.conn.createDataChannel("ordered-input", { ordered: true });
-            this.unorderedChannel = this.conn.createDataChannel("unordered-input", { ordered: false });
-            this.orderedChannel.onclose = this.unorderedChannel.onclose = () => {
-                alert("An input data channel has closed.");
-                window.location.reload();
-            };
-        }
+        this.orderedChannel = this.conn.createDataChannel("ordered-input", { ordered: true });
+        this.unorderedChannel = this.conn.createDataChannel("unordered-input", { ordered: false });
+        this.orderedChannel.onclose = this.unorderedChannel.onclose = () => {
+            alert("An input data channel has closed.");
+            window.location.reload();
+        };
 
         this.conn.ontrack = event => {
             const receivers = this.conn.getReceivers();
@@ -156,22 +156,23 @@ class StreamingWindow {
                 this.video.style.flex = "1";
                 this.video.style.minWidth = "0";
 
-                if (!viewOnly) {
+                if (!this.clientSideMouse) {
                     this.video.onclick = event => {
                         this.video.requestPointerLock();
                     };
-
-                    this.video.addEventListener("mousemove", this.handleMouseMove.bind(this));
-                    this.video.addEventListener("mousedown", this.handleMouseDown.bind(this));
-                    this.video.addEventListener("mouseup", this.handleMouseUp.bind(this));
-                    document.addEventListener("wheel", this.handleWheel.bind(this), { passive: false });
-                    document.addEventListener("keydown", this.handleKeyDown.bind(this), { passive: false });
-                    document.addEventListener("keyup", this.handleKeyUp.bind(this), { passive: false });
-                    this.video.addEventListener("touchstart", this.handleTouchStart.bind(this), { passive: false });
-                    this.video.addEventListener("touchend", this.handleTouchEnd.bind(this), { passive: false });
-                    this.video.addEventListener("touchcancel", this.handleTouchEnd.bind(this), { passive: false });
-                    this.video.addEventListener("touchmove", this.handleTouchMove.bind(this), { passive: false });
+                } else {
+                    document.addEventListener("contextmenu", event => event.preventDefault());
                 }
+                this.video.addEventListener("mousemove", this.handleMouseMove.bind(this));
+                this.video.addEventListener("mousedown", this.handleMouseDown.bind(this));
+                this.video.addEventListener("mouseup", this.handleMouseUp.bind(this));
+                document.addEventListener("wheel", this.handleWheel.bind(this), { passive: false });
+                document.addEventListener("keydown", this.handleKeyDown.bind(this), { passive: false });
+                document.addEventListener("keyup", this.handleKeyUp.bind(this), { passive: false });
+                this.video.addEventListener("touchstart", this.handleTouchStart.bind(this), { passive: false });
+                this.video.addEventListener("touchend", this.handleTouchEnd.bind(this), { passive: false });
+                this.video.addEventListener("touchcancel", this.handleTouchEnd.bind(this), { passive: false });
+                this.video.addEventListener("touchmove", this.handleTouchMove.bind(this), { passive: false });
 
                 this.inner.appendChild(this.video);
             }
@@ -186,6 +187,7 @@ class StreamingWindow {
                     },
                     body: JSON.stringify({
                         password,
+                        show_mouse: !this.clientSideMouse,
                         offer: btoa(JSON.stringify(this.conn.localDescription)),
                     }),
                 }).catch(e => {
@@ -226,12 +228,20 @@ class StreamingWindow {
     }
 
     handleMouseMove(event) {
-        const message = {
-            type: "mousemove",
-            x: event.movementX,
-            y: event.movementY,
-        };
-        this.unorderedChannel.send(JSON.stringify(message));
+        if (this.clientSideMouse) {
+            const message = {
+                type: "mousemoveabs",
+                ...positionInVideo(event.clientX, event.clientY, this.video),
+            };
+            this.orderedChannel.send(JSON.stringify(message));
+        } else {
+            const message = {
+                type: "mousemove",
+                x: event.movementX,
+                y: event.movementY,
+            };
+            this.unorderedChannel.send(JSON.stringify(message));
+        }
     }
 
     handleMouseDown(event) {
