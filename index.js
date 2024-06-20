@@ -105,16 +105,18 @@ class StreamingWindow {
         this.touches = [];
         this.lastRightClickTime = 0;
 
+        this.inner.style.display = "flex";
         this.inner.style.boxSizing = "border-box";
         this.inner.style.width = "100%";
         this.inner.style.height = "100%";
-
-        this.inner.style.display = "flex";
-        this.inner.style.flex = "1";
-        this.inner.style.minHeight = "0";
+        this.inner.style.justifyContent = "center";
+        this.inner.style.alignItems = "center";
     }
 
     startStreaming(ipAddress, password) {
+        this.inner.ariaBusy = true;
+        this.inner.innerText = "Please wait...";
+
         this.conn = new RTCPeerConnection({
             iceServers: [
                 {
@@ -129,7 +131,7 @@ class StreamingWindow {
             for (const receiver of receivers) {
                 receiver.jitterBufferTarget = receiver.jitterBufferDelayHint = receiver.playoutDelayHint = 0.;
             }
-        }, 1);
+        });
 
         this.orderedChannel = this.conn.createDataChannel("ordered-input", { ordered: true });
         this.unorderedChannel = this.conn.createDataChannel("unordered-input", { ordered: false });
@@ -139,10 +141,6 @@ class StreamingWindow {
         };
 
         this.conn.ontrack = event => {
-            const receivers = this.conn.getReceivers();
-            for (const receiver of receivers) {
-                receiver.jitterBufferTarget = receiver.jitterBufferDelayHint = receiver.playoutDelayHint = 0.;
-            }
             event.transceiver.receiver.jitterBufferTarget = event.transceiver.receiver.jitterBufferDelayHint = event.transceiver.receiver.playoutDelayHint = 0.;
             
             const media = document.createElement(event.track.kind);
@@ -174,6 +172,13 @@ class StreamingWindow {
                 this.video.addEventListener("touchcancel", this.handleTouchEnd.bind(this), { passive: false });
                 this.video.addEventListener("touchmove", this.handleTouchMove.bind(this), { passive: false });
 
+
+                this.inner.innerText = "";
+                this.inner.ariaBusy = false;
+                this.inner.style.removeProperty("justify-content");
+                this.inner.style.removeProperty("align-items");
+                this.inner.style.flex = "1";
+                this.inner.style.minHeight = "0";
                 this.inner.appendChild(this.video);
             }
         };
