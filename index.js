@@ -172,7 +172,6 @@ class StreamingWindow {
                 this.video.addEventListener("touchcancel", this.handleTouchEnd.bind(this), { passive: false });
                 this.video.addEventListener("touchmove", this.handleTouchMove.bind(this), { passive: false });
 
-
                 this.inner.innerText = "";
                 this.inner.ariaBusy = false;
                 this.inner.style.removeProperty("justify-content");
