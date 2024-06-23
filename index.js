@@ -65,6 +65,17 @@ class SetupForm {
         this.clientSideMouseCheckboxLabelText = document.createTextNode("Client-side mouse");
         this.clientSideMouseCheckboxLabel.appendChild(this.clientSideMouseCheckboxLabelText);
 
+        this.naturalTouchScrollingCheckboxLabel = document.createElement("label");
+        this.naturalTouchScrollingCheckboxLabel.style.marginBottom = "var(--pico-spacing)";
+        this.inner.appendChild(this.naturalTouchScrollingCheckboxLabel);
+
+        this.naturalTouchScrollingCheckbox = document.createElement("input");
+        this.naturalTouchScrollingCheckbox.type = "checkbox";
+        this.naturalTouchScrollingCheckboxLabel.appendChild(this.naturalTouchScrollingCheckbox);
+
+        this.naturalTouchScrollingCheckboxLabelText = document.createTextNode("Natural touch scrolling");
+        this.naturalTouchScrollingCheckboxLabel.appendChild(this.naturalTouchScrollingCheckboxLabelText);
+
         this.submitButton = document.createElement("button");
         this.submitButton.type = "submit";
         this.submitButton.innerText = "Login";
@@ -87,17 +98,18 @@ class SetupForm {
     handleSubmit(event) {
         event.preventDefault();
 
-        const streamingWindow = new StreamingWindow(this.clientSideMouseCheckbox.checked);
+        const streamingWindow = new StreamingWindow(this.clientSideMouseCheckbox.checked, this.naturalTouchScrollingCheckbox.checked);
         streamingWindow.startStreaming(this.ipAddressInput.value, this.passwordInput.value);
         this.inner.replaceWith(streamingWindow.inner);
     }
 }
 
 class StreamingWindow {
-    constructor(clientSideMouse = false) {
+    constructor(clientSideMouse = false, naturalTouchScrolling = false) {
         this.inner = document.createElement("div");
 
         this.clientSideMouse = clientSideMouse;
+        this.naturalTouchScrolling = naturalTouchScrolling;
 
         this.wheelX = 0;
         this.wheelY = 0;
@@ -487,8 +499,8 @@ class StreamingWindow {
 
                     const message = {
                         type: "wheel",
-                        x: (updatedTouches[0].clientX - this.touches[0].clientX) * 8,
-                        y: (updatedTouches[0].clientY - this.touches[0].clientY) * 8,
+                        x: (updatedTouches[0].clientX - this.touches[0].clientX) * (this.naturalTouchScrolling ? -1 : 1) * 8,
+                        y: (updatedTouches[0].clientY - this.touches[0].clientY) * (this.naturalTouchScrolling ? -1 : 1) * 8,
                     };
                     this.unorderedChannel.send(JSON.stringify(message));
                 }
