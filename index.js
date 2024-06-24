@@ -127,7 +127,7 @@ class StreamingWindow {
 
     startStreaming(ipAddress, password) {
         this.inner.ariaBusy = true;
-        this.inner.innerText = "Please wait...";
+        this.inner.innerText = "Connecting...";
 
         this.conn = new RTCPeerConnection({
             iceServers: [
