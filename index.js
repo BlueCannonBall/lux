@@ -1,5 +1,5 @@
 function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function distance(x1, y1, x2, y2) {
@@ -12,11 +12,19 @@ function positionInVideo(x, y, video) {
     if (videoAspectRatio > windowAspectRatio) {
         return {
             x: x / (video.offsetWidth / video.videoWidth),
-            y: (y - ((1.0 - windowAspectRatio / videoAspectRatio) * video.offsetHeight / 2)) / (video.offsetWidth / video.videoWidth),
+            y:
+                (y -
+                    ((1.0 - windowAspectRatio / videoAspectRatio) * video.offsetHeight) /
+                    2) /
+                (video.offsetWidth / video.videoWidth),
         };
     } else if (videoAspectRatio < windowAspectRatio) {
         return {
-            x: (x - ((1.0 - videoAspectRatio / windowAspectRatio) * video.offsetWidth / 2)) / (video.offsetHeight / video.videoHeight),
+            x:
+                (x -
+                    ((1.0 - videoAspectRatio / windowAspectRatio) * video.offsetWidth) /
+                    2) /
+                (video.offsetHeight / video.videoHeight),
             y: y / (video.offsetHeight / video.videoHeight),
         };
     } else {
@@ -55,33 +63,46 @@ class SetupForm {
         this.inner.appendChild(this.passwordInput);
 
         this.clientSideMouseCheckboxLabel = document.createElement("label");
-        this.clientSideMouseCheckboxLabel.style.marginBottom = "var(--pico-spacing)";
+        this.clientSideMouseCheckboxLabel.style.marginBottom =
+            "var(--pico-spacing)";
         this.inner.appendChild(this.clientSideMouseCheckboxLabel);
 
         this.clientSideMouseCheckbox = document.createElement("input");
         this.clientSideMouseCheckbox.type = "checkbox";
         this.clientSideMouseCheckboxLabel.appendChild(this.clientSideMouseCheckbox);
 
-        this.clientSideMouseCheckboxLabelText = document.createTextNode("Client-side mouse");
-        this.clientSideMouseCheckboxLabel.appendChild(this.clientSideMouseCheckboxLabelText);
+        this.clientSideMouseCheckboxLabelText =
+            document.createTextNode("Client-side mouse");
+        this.clientSideMouseCheckboxLabel.appendChild(
+            this.clientSideMouseCheckboxLabelText,
+        );
 
         this.naturalTouchScrollingCheckboxLabel = document.createElement("label");
-        this.naturalTouchScrollingCheckboxLabel.style.marginBottom = "var(--pico-spacing)";
+        this.naturalTouchScrollingCheckboxLabel.style.marginBottom =
+            "var(--pico-spacing)";
         this.inner.appendChild(this.naturalTouchScrollingCheckboxLabel);
 
         this.naturalTouchScrollingCheckbox = document.createElement("input");
         this.naturalTouchScrollingCheckbox.type = "checkbox";
-        this.naturalTouchScrollingCheckboxLabel.appendChild(this.naturalTouchScrollingCheckbox);
+        this.naturalTouchScrollingCheckboxLabel.appendChild(
+            this.naturalTouchScrollingCheckbox,
+        );
 
-        this.naturalTouchScrollingCheckboxLabelText = document.createTextNode("Natural touch scrolling");
-        this.naturalTouchScrollingCheckboxLabel.appendChild(this.naturalTouchScrollingCheckboxLabelText);
+        this.naturalTouchScrollingCheckboxLabelText = document.createTextNode(
+            "Natural touch scrolling",
+        );
+        this.naturalTouchScrollingCheckboxLabel.appendChild(
+            this.naturalTouchScrollingCheckboxLabelText,
+        );
 
         this.submitButton = document.createElement("button");
         this.submitButton.type = "submit";
         this.submitButton.innerText = "Login";
         this.inner.appendChild(this.submitButton);
 
-        this.inner.addEventListener("submit", this.handleSubmit.bind(this), { passive: false });
+        this.inner.addEventListener("submit", this.handleSubmit.bind(this), {
+            passive: false,
+        });
 
         this.inner.style.boxSizing = "border-box";
         this.inner.style.width = "100%";
@@ -89,7 +110,7 @@ class SetupForm {
 
         this.inner.style.paddingLeft = "15%";
         this.inner.style.paddingRight = "15%";
-        
+
         this.inner.style.display = "flex";
         this.inner.style.flexDirection = "column";
         this.inner.style.justifyContent = "center";
@@ -98,8 +119,14 @@ class SetupForm {
     handleSubmit(event) {
         event.preventDefault();
 
-        const streamingWindow = new StreamingWindow(this.clientSideMouseCheckbox.checked, this.naturalTouchScrollingCheckbox.checked);
-        streamingWindow.startStreaming(this.ipAddressInput.value, this.passwordInput.value);
+        const streamingWindow = new StreamingWindow(
+            this.clientSideMouseCheckbox.checked,
+            this.naturalTouchScrollingCheckbox.checked,
+        );
+        streamingWindow.startStreaming(
+            this.ipAddressInput.value,
+            this.passwordInput.value,
+        );
         this.inner.replaceWith(streamingWindow.inner);
     }
 }
@@ -141,22 +168,35 @@ class StreamingWindow {
         setInterval(() => {
             const receivers = this.conn.getReceivers();
             for (const receiver of receivers) {
-                receiver.jitterBufferTarget = receiver.jitterBufferDelayHint = receiver.playoutDelayHint = 0.;
+                receiver.jitterBufferTarget =
+                    receiver.jitterBufferDelayHint =
+                    receiver.playoutDelayHint =
+                    0;
             }
         });
 
-        this.orderedChannel = this.conn.createDataChannel("ordered-input", { ordered: true });
-        this.unorderedChannel = this.conn.createDataChannel("unordered-input", { ordered: false });
+        this.orderedChannel = this.conn.createDataChannel("ordered-input", {
+            ordered: true,
+        });
+        this.unorderedChannel = this.conn.createDataChannel("unordered-input", {
+            ordered: false,
+        });
         this.orderedChannel.onclose = this.unorderedChannel.onclose = () => {
             alert("An input data channel has closed.");
             window.location.reload();
         };
 
-        this.conn.ontrack = event => {
-            event.transceiver.receiver.jitterBufferTarget = event.transceiver.receiver.jitterBufferDelayHint = event.transceiver.receiver.playoutDelayHint = 0.;
-            
+        this.conn.ontrack = (event) => {
+            event.transceiver.receiver.jitterBufferTarget =
+                event.transceiver.receiver.jitterBufferDelayHint =
+                event.transceiver.receiver.playoutDelayHint =
+                0;
+
             const media = document.createElement(event.track.kind);
-            if (media.tagName === "VIDEO") { // Ignore audio tracks, for now
+            media.setAttribute("webkit-playsinline", "");
+            media.setAttribute("playsinline", "");
+            if (media.tagName === "VIDEO") {
+                // Ignore audio tracks, for now
                 this.video = media;
                 this.video.srcObject = event.streams[0];
 
@@ -167,22 +207,52 @@ class StreamingWindow {
                 this.video.style.minWidth = "0";
 
                 if (!this.clientSideMouse) {
-                    this.video.onclick = event => {
+                    this.video.onclick = (event) => {
                         this.video.requestPointerLock();
                     };
                 } else {
-                    document.addEventListener("contextmenu", event => event.preventDefault());
+                    document.addEventListener("contextmenu", (event) =>
+                        event.preventDefault(),
+                    );
                 }
-                this.video.addEventListener("mousemove", this.handleMouseMove.bind(this));
-                this.video.addEventListener("mousedown", this.handleMouseDown.bind(this));
+                this.video.addEventListener(
+                    "mousemove",
+                    this.handleMouseMove.bind(this),
+                );
+                this.video.addEventListener(
+                    "mousedown",
+                    this.handleMouseDown.bind(this),
+                );
                 this.video.addEventListener("mouseup", this.handleMouseUp.bind(this));
-                document.addEventListener("wheel", this.handleWheel.bind(this), { passive: false });
-                document.addEventListener("keydown", this.handleKeyDown.bind(this), { passive: false });
-                document.addEventListener("keyup", this.handleKeyUp.bind(this), { passive: false });
-                this.video.addEventListener("touchstart", this.handleTouchStart.bind(this), { passive: false });
-                this.video.addEventListener("touchend", this.handleTouchEnd.bind(this), { passive: false });
-                this.video.addEventListener("touchcancel", this.handleTouchEnd.bind(this), { passive: false });
-                this.video.addEventListener("touchmove", this.handleTouchMove.bind(this), { passive: false });
+                document.addEventListener("wheel", this.handleWheel.bind(this), {
+                    passive: false,
+                });
+                document.addEventListener("keydown", this.handleKeyDown.bind(this), {
+                    passive: false,
+                });
+                document.addEventListener("keyup", this.handleKeyUp.bind(this), {
+                    passive: false,
+                });
+                this.video.addEventListener(
+                    "touchstart",
+                    this.handleTouchStart.bind(this),
+                    { passive: false },
+                );
+                this.video.addEventListener(
+                    "touchend",
+                    this.handleTouchEnd.bind(this),
+                    { passive: false },
+                );
+                this.video.addEventListener(
+                    "touchcancel",
+                    this.handleTouchEnd.bind(this),
+                    { passive: false },
+                );
+                this.video.addEventListener(
+                    "touchmove",
+                    this.handleTouchMove.bind(this),
+                    { passive: false },
+                );
 
                 this.inner.innerText = "";
                 this.inner.ariaBusy = false;
@@ -194,8 +264,20 @@ class StreamingWindow {
             }
         };
 
-        this.conn.onicecandidate = async event => {    
-            if (event.candidate === null) {
+        // Fast ICE negotiation: Copyright (C) 2024 Aspect
+        // This event handler below is free software; see the source for copying conditions.
+        // There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+        this.conn.onicecandidate = async (event) => {
+            console.log(event.candidate);
+            if (!event.candidate) {
+                return;
+            }
+            if (
+                event.candidate.candidate.includes("srflx") &&
+                this.conn.signalingState === "have-local-offer" &&
+                event.candidate.sdpMLineIndex === 0
+            ) {
+                console.log("We have a local offer");
                 const resp = await fetch(`http://${ipAddress}/offer`, {
                     method: "POST",
                     headers: {
@@ -206,7 +288,7 @@ class StreamingWindow {
                         show_mouse: !this.clientSideMouse,
                         offer: btoa(JSON.stringify(this.conn.localDescription)),
                     }),
-                }).catch(e => {
+                }).catch((e) => {
                     alert(`Error: ${e}`);
                     window.location.reload();
                 });
@@ -214,7 +296,11 @@ class StreamingWindow {
                 if (resp.status === 200) {
                     const answer = await resp.text();
                     try {
-                        this.conn.setRemoteDescription(new RTCSessionDescription(JSON.parse(atob(JSON.parse(answer).Offer))));
+                        this.conn.setRemoteDescription(
+                            new RTCSessionDescription(
+                                JSON.parse(atob(JSON.parse(answer).Offer)),
+                            ),
+                        );
                     } catch (e) {
                         alert(`Error: ${e}`);
                         window.location.reload();
@@ -228,7 +314,11 @@ class StreamingWindow {
 
         // Offer to receive 1 video track
         this.conn.addTransceiver("video", { direction: "recvonly" });
-        this.conn.createOffer().then(offer => this.conn.setLocalDescription(offer));
+        this.conn.createOffer().then((offer) => {
+            console.log("LOCALDESCSET");
+            this.conn.setLocalDescription(offer);
+        });
+        //setInterval(() => console.log(this.conn.pendingLocalDescription), 100);
     }
 
     pushTouch(touch) {
@@ -322,14 +412,18 @@ class StreamingWindow {
         switch (this.touches.length) {
             case 0: {
                 let penTouch;
-                if ((penTouch = newTouches.findIndex(touch => touch.force)) !== -1) {
+                if ((penTouch = newTouches.findIndex((touch) => touch.force)) !== -1) {
                     this.touches = [];
                     this.pushTouch(newTouches[penTouch]);
 
                     // Start drag
                     let message = {
                         type: "mousemoveabs",
-                        ...positionInVideo(this.touches[0].clientX, this.touches[0].clientY, this.video),
+                        ...positionInVideo(
+                            this.touches[0].clientX,
+                            this.touches[0].clientY,
+                            this.video,
+                        ),
                     };
                     this.orderedChannel.send(JSON.stringify(message));
                     message = {
@@ -345,8 +439,8 @@ class StreamingWindow {
 
             default: {
                 let penTouch;
-                if ((penTouch = newTouches.findIndex(touch => touch.force)) !== -1) {
-                    if (this.touches.some(touch => touch.force)) {
+                if ((penTouch = newTouches.findIndex((touch) => touch.force)) !== -1) {
+                    if (this.touches.some((touch) => touch.force)) {
                         break;
                     }
 
@@ -358,14 +452,18 @@ class StreamingWindow {
                     this.orderedChannel.send(JSON.stringify(message));
                     message.button = 2;
                     this.orderedChannel.send(JSON.stringify(message));
-                    
+
                     this.touches = [];
                     this.pushTouch(newTouches[penTouch]);
 
                     // Start drag
                     message = {
                         type: "mousemoveabs",
-                        ...positionInVideo(this.touches[0].clientX, this.touches[0].clientY, this.video),
+                        ...positionInVideo(
+                            this.touches[0].clientX,
+                            this.touches[0].clientY,
+                            this.video,
+                        ),
                     };
                     this.orderedChannel.send(JSON.stringify(message));
                     message = {
@@ -412,8 +510,10 @@ class StreamingWindow {
                         button: 0,
                     };
                     this.orderedChannel.send(JSON.stringify(message));
-                } else if (Date.now() - this.lastRightClickTime > 125 &&
-                    Date.now() - this.touches[0].startTime <= 125) {
+                } else if (
+                    Date.now() - this.lastRightClickTime > 125 &&
+                    Date.now() - this.touches[0].startTime <= 125
+                ) {
                     const message = {
                         button: 0,
                     };
@@ -429,9 +529,24 @@ class StreamingWindow {
             }
 
             case 2: {
-                if (this.touches.every(touch => Date.now() - touch.startTime <= 250) &&
-                    this.touches.every(touch => distance(touch.clientX, touch.clientY, touch.initialClientX, touch.initialClientY) <= 25) &&
-                    distance(this.touches[0].clientX, this.touches[0].clientY, this.touches[1].clientX, this.touches[1].clientY) >= 15) {
+                if (
+                    this.touches.every((touch) => Date.now() - touch.startTime <= 250) &&
+                    this.touches.every(
+                        (touch) =>
+                            distance(
+                                touch.clientX,
+                                touch.clientY,
+                                touch.initialClientX,
+                                touch.initialClientY,
+                            ) <= 25,
+                    ) &&
+                    distance(
+                        this.touches[0].clientX,
+                        this.touches[0].clientY,
+                        this.touches[1].clientX,
+                        this.touches[1].clientY,
+                    ) >= 15
+                ) {
                     const message = {
                         button: 2,
                     };
@@ -456,7 +571,7 @@ class StreamingWindow {
             }
         }
 
-        this.touches = this.touches.filter(touch => {
+        this.touches = this.touches.filter((touch) => {
             for (const deletedTouch of deletedTouches) {
                 if (touch.identifier === deletedTouch.identifier) {
                     return false;
@@ -476,7 +591,11 @@ class StreamingWindow {
                 if (this.touches[0].force) {
                     const message = {
                         type: "mousemoveabs",
-                        ...positionInVideo(updatedTouches[0].clientX, updatedTouches[0].clientY, this.video),
+                        ...positionInVideo(
+                            updatedTouches[0].clientX,
+                            updatedTouches[0].clientY,
+                            this.video,
+                        ),
                     };
                     this.orderedChannel.send(JSON.stringify(message));
                 } else {
@@ -491,16 +610,25 @@ class StreamingWindow {
             }
 
             case 2: {
-                if (this.touches.every(touch => Date.now() - touch.startTime >= 25)) {
-                    if (Math.abs(updatedTouches[0].clientX - this.touches[0].clientX) < 15 &&
-                        Math.abs(updatedTouches[0].clientY - this.touches[0].clientY) < 15) {
+                if (this.touches.every((touch) => Date.now() - touch.startTime >= 25)) {
+                    if (
+                        Math.abs(updatedTouches[0].clientX - this.touches[0].clientX) <
+                        15 &&
+                        Math.abs(updatedTouches[0].clientY - this.touches[0].clientY) < 15
+                    ) {
                         return;
                     }
 
                     const message = {
                         type: "wheel",
-                        x: (updatedTouches[0].clientX - this.touches[0].clientX) * (this.naturalTouchScrolling ? -1 : 1) * 8,
-                        y: (updatedTouches[0].clientY - this.touches[0].clientY) * (this.naturalTouchScrolling ? -1 : 1) * 8,
+                        x:
+                            (updatedTouches[0].clientX - this.touches[0].clientX) *
+                            (this.naturalTouchScrolling ? -1 : 1) *
+                            8,
+                        y:
+                            (updatedTouches[0].clientY - this.touches[0].clientY) *
+                            (this.naturalTouchScrolling ? -1 : 1) *
+                            8,
                     };
                     this.unorderedChannel.send(JSON.stringify(message));
                 }
