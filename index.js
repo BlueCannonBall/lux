@@ -267,6 +267,7 @@ class StreamingWindow {
         // Fast ICE negotiation: Copyright (C) 2024 Aspect
         // This event handler below is free software; see the source for copying conditions.
         // There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+        let didConnect = false;
         this.conn.onicecandidate = async (event) => {
             console.log(event.candidate);
             if (!event.candidate) {
@@ -275,8 +276,9 @@ class StreamingWindow {
             if (
                 event.candidate.candidate.includes("srflx") &&
                 this.conn.signalingState === "have-local-offer" &&
-                event.candidate.sdpMLineIndex === 0
+                !didConnect
             ) {
+                didConnect = true;
                 console.log("We have a local offer");
                 const resp = await fetch(`http://${ipAddress}/offer`, {
                     method: "POST",
