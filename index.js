@@ -43,10 +43,10 @@ class SetupForm {
         this.titleHeading.innerHTML = `<img src="icon.png" style="margin-right: 5px; display: inline-block; width: 60px; vertical-align: -15px;"> Lux Client`;
         this.inner.appendChild(this.titleHeading);
 
-        this.ipAddressInput = document.createElement("input");
-        this.ipAddressInput.type = "text";
-        this.ipAddressInput.placeholder = "IP Address";
-        this.inner.appendChild(this.ipAddressInput);
+        this.addressInput = document.createElement("input");
+        this.addressInput.type = "text";
+        this.addressInput.placeholder = "IP Address";
+        this.inner.appendChild(this.addressInput);
 
         this.passwordInput = document.createElement("input");
         this.passwordInput.type = "password";
@@ -106,10 +106,18 @@ class SetupForm {
         this.inner.style.display = "flex";
         this.inner.style.flexDirection = "column";
         this.inner.style.justifyContent = "center";
+
+        // Load credentials
+        this.addressInput.value = localStorage.getItem("address");
+        this.passwordInput.value = localStorage.getItem("password");
     }
 
     handleSubmit(event) {
         event.preventDefault();
+
+        // Save credentials
+        localStorage.setItem("address", this.addressInput.value);
+        localStorage.setItem("password", this.passwordInput.value);
 
         const streamingWindow = new StreamingWindow(
             this.clientSideMouseCheckbox.checked,
@@ -117,7 +125,7 @@ class SetupForm {
             this.naturalTouchScrollingCheckbox.checked,
         );
         streamingWindow.startStreaming(
-            this.ipAddressInput.value,
+            this.addressInput.value,
             this.passwordInput.value,
         );
         this.inner.replaceWith(streamingWindow.inner);
@@ -146,7 +154,7 @@ class StreamingWindow {
         this.inner.style.alignItems = "center";
     }
 
-    startStreaming(ipAddress, password) {
+    startStreaming(address, password) {
         this.inner.ariaBusy = true;
         this.inner.innerText = "Connecting...";
 
@@ -250,7 +258,7 @@ class StreamingWindow {
                 !didConnect) {
                 didConnect = true;
                 console.log("We have a local offer");
-                const resp = await fetch(`http://${ipAddress}/offer`, {
+                const resp = await fetch(`http://${address}/offer`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
