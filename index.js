@@ -1,5 +1,5 @@
 function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function distance(x1, y1, x2, y2) {
@@ -165,7 +165,7 @@ class StreamingWindow {
             window.location.reload();
         };
 
-        this.conn.ontrack = (event) => {
+        this.conn.ontrack = event => {
             event.transceiver.receiver.jitterBufferTarget = event.transceiver.receiver.jitterBufferDelayHint = event.transceiver.receiver.playoutDelayHint = 0;
 
             const media = document.createElement(event.track.kind);
@@ -182,7 +182,7 @@ class StreamingWindow {
                 this.video.style.minWidth = "0";
 
                 if (!this.clientSideMouse) {
-                    this.video.onclick = (event) => {
+                    this.video.onclick = event => {
                         this.video.requestPointerLock();
                     };
                 } else {
@@ -227,7 +227,7 @@ class StreamingWindow {
         // This event handler below is free software; see the source for copying conditions.
         // There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
         let didConnect = false;
-        this.conn.onicecandidate = async (event) => {
+        this.conn.onicecandidate = async event => {
             console.log(event.candidate);
             if (!event.candidate) {
                 return;
@@ -247,7 +247,7 @@ class StreamingWindow {
                         show_mouse: !this.clientSideMouse,
                         offer: btoa(JSON.stringify(this.conn.localDescription)),
                     }),
-                }).catch((e) => {
+                }).catch(e => {
                     alert(`Error: ${e}`);
                     window.location.reload();
                 });
@@ -269,7 +269,7 @@ class StreamingWindow {
 
         // Offer to receive 1 video track
         this.conn.addTransceiver("video", { direction: "recvonly" });
-        this.conn.createOffer().then((offer) => {
+        this.conn.createOffer().then(offer => {
             console.log("LOCALDESCSET");
             this.conn.setLocalDescription(offer);
         });
@@ -366,7 +366,7 @@ class StreamingWindow {
         switch (this.touches.length) {
             case 0: {
                 let penTouch;
-                if ((penTouch = newTouches.findIndex((touch) => touch.force)) !== -1) {
+                if ((penTouch = newTouches.findIndex(touch => touch.force)) !== -1) {
                     this.touches = [];
                     this.pushTouch(newTouches[penTouch]);
 
@@ -393,8 +393,8 @@ class StreamingWindow {
 
             default: {
                 let penTouch;
-                if ((penTouch = newTouches.findIndex((touch) => touch.force)) !== -1) {
-                    if (this.touches.some((touch) => touch.force)) {
+                if ((penTouch = newTouches.findIndex(touch => touch.force)) !== -1) {
+                    if (this.touches.some(touch => touch.force)) {
                         break;
                     }
 
@@ -481,9 +481,9 @@ class StreamingWindow {
             }
 
             case 2: {
-                if (this.touches.every((touch) => Date.now() - touch.startTime <= 250) &&
+                if (this.touches.every(touch => Date.now() - touch.startTime <= 250) &&
                     this.touches.every(
-                        (touch) => distance(
+                        touch => distance(
                             touch.clientX,
                             touch.clientY,
                             touch.initialClientX,
@@ -520,7 +520,7 @@ class StreamingWindow {
             }
         }
 
-        this.touches = this.touches.filter((touch) => {
+        this.touches = this.touches.filter(touch => {
             for (const deletedTouch of deletedTouches) {
                 if (touch.identifier === deletedTouch.identifier) {
                     return false;
@@ -559,7 +559,7 @@ class StreamingWindow {
             }
 
             case 2: {
-                if (this.touches.every((touch) => Date.now() - touch.startTime >= 25)) {
+                if (this.touches.every(touch => Date.now() - touch.startTime >= 25)) {
                     if (Math.abs(updatedTouches[0].clientX - this.touches[0].clientX) < 15 &&
                         Math.abs(updatedTouches[0].clientY - this.touches[0].clientY) < 15) {
                         return;
