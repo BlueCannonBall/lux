@@ -464,12 +464,14 @@ class StreamingWindow {
             }
         } else {
             for (const touch of newTouches) {
-                const message = {
-                    type: "touchstart",
-                    id: Math.abs(touch.identifier) % 10,
-                    ...positionInVideo(touch.clientX, touch.clientY, this.video),
-                };
-                this.orderedChannel.send(JSON.stringify(message));
+                if (touch.radiusX <= 75 && touch.radiusY <= 75) {
+                    const message = {
+                        type: "touchstart",
+                        id: Math.abs(touch.identifier) % 10,
+                        ...positionInVideo(touch.clientX, touch.clientY, this.video),
+                    };
+                    this.orderedChannel.send(JSON.stringify(message));
+                }
             }
         }
     }
@@ -553,11 +555,13 @@ class StreamingWindow {
             });
         } else {
             for (const touch of deletedTouches) {
-                const message = {
-                    type: "touchend",
-                    id: Math.abs(touch.identifier) % 10,
-                };
-                this.orderedChannel.send(JSON.stringify(message));
+                if (touch.radiusX <= 75 && touch.radiusY <= 75) {
+                    const message = {
+                        type: "touchend",
+                        id: Math.abs(touch.identifier) % 10,
+                    };
+                    this.orderedChannel.send(JSON.stringify(message));
+                }
             }
         }
     }
@@ -629,12 +633,14 @@ class StreamingWindow {
             }
         } else {
             for (const touch of movedTouches) {
-                const message = {
-                    type: "touchmove",
-                    id: Math.abs(touch.identifier) % 10,
-                    ...positionInVideo(touch.clientX, touch.clientY, this.video),
-                };
-                this.orderedChannel.send(JSON.stringify(message));
+                if (touch.radiusX <= 75 && touch.radiusY <= 75) {
+                    const message = {
+                        type: "touchmove",
+                        id: Math.abs(touch.identifier) % 10,
+                        ...positionInVideo(touch.clientX, touch.clientY, this.video),
+                    };
+                    this.orderedChannel.send(JSON.stringify(message));
+                }
             }
         }
     }
