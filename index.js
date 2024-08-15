@@ -520,7 +520,7 @@ class StreamingWindow {
                             this.touches[0].clientY,
                             this.touches[1].clientX,
                             this.touches[1].clientY,
-                        ) >= 15) {
+                        ) >= 20) {
                         const message = {
                             button: 2,
                         };
