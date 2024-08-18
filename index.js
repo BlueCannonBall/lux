@@ -453,9 +453,9 @@ class StreamingWindow {
                 }
             }
 
-            for (const newTouch of newTouches) {
-                if (newTouch.radiusX <= 75 && newTouch.radiusY <= 75) {
-                    this.pushTouch(newTouch);
+            for (const touch of newTouches) {
+                if (touch.radiusX <= 75 && touch.radiusY <= 75) {
+                    this.pushTouch(touch);
                 }
             }
 
@@ -472,13 +472,26 @@ class StreamingWindow {
             }
         } else {
             for (const touch of newTouches) {
-                if (touch.radiusX <= 75 && touch.radiusY <= 75) {
+                if (touch.force) {
+                    let message = {
+                        type: "mousemoveabs",
+                        ...positionInVideo(touch.clientX, touch.clientY, this.video),
+                    };
+                    this.orderedChannel.send(JSON.stringify(message));
+                    message = {
+                        type: "mousedown",
+                        button: 0,
+                    };
+                    this.orderedChannel.send(JSON.stringify(message));
+                    this.pushTouch(touch);
+                } else if (touch.radiusX <= 75 && touch.radiusY <= 75) {
                     const message = {
                         type: "touchstart",
                         id: Math.abs(touch.identifier) % 10,
                         ...positionInVideo(touch.clientX, touch.clientY, this.video),
                     };
                     this.orderedChannel.send(JSON.stringify(message));
+                    this.pushTouch(touch);
                 }
             }
         }
@@ -487,6 +500,7 @@ class StreamingWindow {
     async handleTouchEnd(event) {
         event.preventDefault();
         const deletedTouches = touchListAsArray(event.changedTouches);
+
         if (this.simulateTouchpad) {
             switch (this.touches.length) {
                 case 1: {
@@ -552,31 +566,38 @@ class StreamingWindow {
                     break;
                 }
             }
-
-            this.touches = this.touches.filter(touch => {
-                for (const deletedTouch of deletedTouches) {
-                    if (touch.identifier === deletedTouch.identifier) {
-                        return false;
-                    }
-                }
-                return true;
-            });
         } else {
-            for (const touch of deletedTouches) {
-                if (touch.radiusX <= 75 && touch.radiusY <= 75) {
+            for (const deletedTouch of deletedTouches) {
+                if (this.touches.find(touch => touch.identifier === deletedTouch.identifier).force) {
+                    const message = {
+                        type: "mouseup",
+                        button: 0,
+                    };
+                    this.orderedChannel.send(JSON.stringify(message));
+                } else if (deletedTouch.radiusX <= 75 && deletedTouch.radiusY <= 75) {
                     const message = {
                         type: "touchend",
-                        id: Math.abs(touch.identifier) % 10,
+                        id: Math.abs(deletedTouch.identifier) % 10,
                     };
                     this.orderedChannel.send(JSON.stringify(message));
                 }
             }
         }
+
+        this.touches = this.touches.filter(touch => {
+            for (const deletedTouch of deletedTouches) {
+                if (touch.identifier === deletedTouch.identifier) {
+                    return false;
+                }
+            }
+            return true;
+        });
     }
 
     handleTouchMove(event) {
         event.preventDefault();
         const movedTouches = touchListAsArray(event.changedTouches);
+        
         if (this.simulateTouchpad) {
             const updatedTouches = touchListAsArray(event.touches);
 
@@ -630,24 +651,30 @@ class StreamingWindow {
                     break;
                 }
             }
-
-            for (const touch of this.touches) {
-                for (const movedTouch of movedTouches) {
-                    if (touch.identifier === movedTouch.identifier) {
-                        touch.clientX = movedTouch.clientX;
-                        touch.clientY = movedTouch.clientY;
-                    }
-                }
-            }
         } else {
             for (const touch of movedTouches) {
-                if (touch.radiusX <= 75 && touch.radiusY <= 75) {
+                if (touch.force) {
+                    const message = {
+                        type: "mousemoveabs",
+                        ...positionInVideo(touch.clientX, touch.clientY, this.video),
+                    };
+                    this.orderedChannel.send(JSON.stringify(message));
+                } else if (touch.radiusX <= 75 && touch.radiusY <= 75) {
                     const message = {
                         type: "touchmove",
                         id: Math.abs(touch.identifier) % 10,
                         ...positionInVideo(touch.clientX, touch.clientY, this.video),
                     };
                     this.orderedChannel.send(JSON.stringify(message));
+                }
+            }
+        }
+
+        for (const touch of this.touches) {
+            for (const movedTouch of movedTouches) {
+                if (touch.identifier === movedTouch.identifier) {
+                    touch.clientX = movedTouch.clientX;
+                    touch.clientY = movedTouch.clientY;
                 }
             }
         }
