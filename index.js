@@ -472,27 +472,45 @@ class StreamingWindow {
                 }
             }
         } else {
-            for (const touch of newTouches) {
-                if (touch.force) {
-                    let message = {
-                        type: "mousemoveabs",
-                        ...positionInVideo(touch.clientX, touch.clientY, this.video),
-                    };
-                    this.orderedChannel.send(JSON.stringify(message));
-                    message = {
-                        type: "mousedown",
-                        button: 0,
-                    };
-                    this.orderedChannel.send(JSON.stringify(message));
-                    this.pushTouch(touch);
-                } else if (touch.radiusX <= 75 && touch.radiusY <= 75) {
+            let penTouch;
+            if ((penTouch = newTouches.findIndex(touch => touch.force)) !== -1) {
+                // Clear existing touches
+                for (const touch of this.touches) {
                     const message = {
-                        type: "touchstart",
+                        type: "touchend",
                         id: Math.abs(touch.identifier) % 10,
-                        ...positionInVideo(touch.clientX, touch.clientY, this.video),
                     };
                     this.orderedChannel.send(JSON.stringify(message));
-                    this.pushTouch(touch);
+                }
+                this.touches = [];
+                this.pushTouch(newTouches[penTouch]);
+
+                // Start drag
+                let message = {
+                    type: "mousemoveabs",
+                    ...positionInVideo(
+                        this.touches[0].clientX,
+                        this.touches[0].clientY,
+                        this.video,
+                    ),
+                };
+                this.orderedChannel.send(JSON.stringify(message));
+                message = {
+                    type: "mousedown",
+                    button: 0,
+                };
+                this.orderedChannel.send(JSON.stringify(message));
+            } else {
+                for (const touch of newTouches) {
+                    if (touch.radiusX <= 75 && touch.radiusY <= 75) {
+                        const message = {
+                            type: "touchstart",
+                            id: Math.abs(touch.identifier) % 10,
+                            ...positionInVideo(touch.clientX, touch.clientY, this.video),
+                        };
+                        this.orderedChannel.send(JSON.stringify(message));
+                        this.pushTouch(touch);
+                    }
                 }
             }
         }
@@ -569,18 +587,22 @@ class StreamingWindow {
             }
         } else {
             for (const deletedTouch of deletedTouches) {
-                if (this.touches.find(touch => touch.identifier === deletedTouch.identifier)?.force) {
-                    const message = {
-                        type: "mouseup",
-                        button: 0,
-                    };
-                    this.orderedChannel.send(JSON.stringify(message));
-                } else if (deletedTouch.radiusX <= 75 && deletedTouch.radiusY <= 75) {
-                    const message = {
-                        type: "touchend",
-                        id: Math.abs(deletedTouch.identifier) % 10,
-                    };
-                    this.orderedChannel.send(JSON.stringify(message));
+                let touch;
+                if (touch = this.touches.find(touch => touch.identifier === deletedTouch.identifier)) {
+                    if (touch.force) {
+                        // End drag
+                        const message = {
+                            type: "mouseup",
+                            button: 0,
+                        };
+                        this.orderedChannel.send(JSON.stringify(message));
+                    } else {
+                        const message = {
+                            type: "touchend",
+                            id: Math.abs(touch.identifier) % 10,
+                        };
+                        this.orderedChannel.send(JSON.stringify(message));
+                    }
                 }
             }
         }
@@ -653,20 +675,23 @@ class StreamingWindow {
                 }
             }
         } else {
-            for (const touch of movedTouches) {
-                if (touch.force) {
-                    const message = {
-                        type: "mousemoveabs",
-                        ...positionInVideo(touch.clientX, touch.clientY, this.video),
-                    };
-                    this.orderedChannel.send(JSON.stringify(message));
-                } else if (touch.radiusX <= 75 && touch.radiusY <= 75) {
-                    const message = {
-                        type: "touchmove",
-                        id: Math.abs(touch.identifier) % 10,
-                        ...positionInVideo(touch.clientX, touch.clientY, this.video),
-                    };
-                    this.orderedChannel.send(JSON.stringify(message));
+            for (const movedTouch of movedTouches) {
+                let touch;
+                if (touch = this.touches.find(touch => touch.identifier === movedTouch.identifier)) {
+                    if (touch.force) {
+                        const message = {
+                            type: "mousemoveabs",
+                            ...positionInVideo(touch.clientX, touch.clientY, this.video),
+                        };
+                        this.orderedChannel.send(JSON.stringify(message));
+                    } else {
+                        const message = {
+                            type: "touchmove",
+                            id: Math.abs(touch.identifier) % 10,
+                            ...positionInVideo(touch.clientX, touch.clientY, this.video),
+                        };
+                        this.orderedChannel.send(JSON.stringify(message));
+                    }
                 }
             }
         }
