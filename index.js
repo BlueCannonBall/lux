@@ -11,18 +11,18 @@ function positionInVideo(x, y, video) {
     const windowAspectRatio = video.offsetWidth / video.offsetHeight;
     if (videoAspectRatio > windowAspectRatio) {
         return {
-            x: x / (video.offsetWidth / video.videoWidth),
-            y: (y - ((1.0 - windowAspectRatio / videoAspectRatio) * video.offsetHeight) / 2) / (video.offsetWidth / video.videoWidth),
+            x: Math.round(x / (video.offsetWidth / video.videoWidth)),
+            y: Math.round((y - ((1. - windowAspectRatio / videoAspectRatio) * video.offsetHeight) / 2) / (video.offsetWidth / video.videoWidth)),
         };
     } else if (videoAspectRatio < windowAspectRatio) {
         return {
-            x: (x - ((1.0 - videoAspectRatio / windowAspectRatio) * video.offsetWidth) / 2) / (video.offsetHeight / video.videoHeight),
-            y: y / (video.offsetHeight / video.videoHeight),
+            x: Math.round((x - ((1. - videoAspectRatio / windowAspectRatio) * video.offsetWidth) / 2) / (video.offsetHeight / video.videoHeight)),
+            y: Math.round(y / (video.offsetHeight / video.videoHeight)),
         };
     } else {
         return {
-            x: x / (video.offsetWidth / video.videoWidth),
-            y: y / (video.offsetHeight / video.videoHeight),
+            x: Math.round(x / (video.offsetWidth / video.videoWidth)),
+            y: Math.round(y / (video.offsetHeight / video.videoHeight)),
         };
     }
 }
@@ -318,8 +318,8 @@ class StreamingWindow {
         } else {
             const message = {
                 type: "mousemove",
-                x: event.movementX,
-                y: event.movementY,
+                x: Math.round(event.movementX),
+                y: Math.round(event.movementY),
             };
             this.unorderedChannel.send(JSON.stringify(message));
         }
@@ -350,8 +350,8 @@ class StreamingWindow {
         if (Math.abs(this.wheelX) >= 120 || Math.abs(this.wheelY) >= 120) {
             const message = {
                 type: "wheel",
-                x: this.wheelX,
-                y: this.wheelY,
+                x: Math.round(this.wheelX),
+                y: Math.round(this.wheelY),
             };
             this.unorderedChannel.send(JSON.stringify(message));
 
@@ -616,8 +616,8 @@ class StreamingWindow {
                     } else {
                         const message = {
                             type: "mousemove",
-                            x: (updatedTouches[0].clientX - this.touches[0].clientX) * 1.5,
-                            y: (updatedTouches[0].clientY - this.touches[0].clientY) * 1.5,
+                            x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * 1.5),
+                            y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * 1.5),
                         };
                         this.unorderedChannel.send(JSON.stringify(message));
                     }
@@ -633,8 +633,8 @@ class StreamingWindow {
 
                         const message = {
                             type: "wheel",
-                            x: (updatedTouches[0].clientX - this.touches[0].clientX) * (this.naturalTouchScrolling ? -1 : 1) * 8,
-                            y: (updatedTouches[0].clientY - this.touches[0].clientY) * (this.naturalTouchScrolling ? -1 : 1) * 8,
+                            x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * (this.naturalTouchScrolling ? -1 : 1) * 8),
+                            y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * (this.naturalTouchScrolling ? -1 : 1) * 8),
                         };
                         this.unorderedChannel.send(JSON.stringify(message));
                     }
@@ -644,8 +644,8 @@ class StreamingWindow {
                 case 3: {
                     const message = {
                         type: "mousemove",
-                        x: (updatedTouches[0].clientX - this.touches[0].clientX) * 1.5,
-                        y: (updatedTouches[0].clientY - this.touches[0].clientY) * 1.5,
+                        x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * 1.5),
+                        y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * 1.5),
                     };
                     this.unorderedChannel.send(JSON.stringify(message));
                     break;
