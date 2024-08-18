@@ -383,7 +383,7 @@ class StreamingWindow {
     handleTouchStart(event) {
         event.preventDefault();
         const newTouches = touchListAsArray(event.changedTouches);
-        
+
         if (this.simulateTouchpad) {
             switch (this.touches.length) {
                 case 0: {
