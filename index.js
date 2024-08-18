@@ -568,7 +568,7 @@ class StreamingWindow {
             }
         } else {
             for (const deletedTouch of deletedTouches) {
-                if (this.touches.find(touch => touch.identifier === deletedTouch.identifier).force) {
+                if (this.touches.find(touch => touch.identifier === deletedTouch.identifier)?.force) {
                     const message = {
                         type: "mouseup",
                         button: 0,
