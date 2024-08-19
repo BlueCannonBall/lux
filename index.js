@@ -35,6 +35,14 @@ function touchListAsArray(touchList) {
     return ret;
 }
 
+function isTouchForceful(touch) {
+    if (window.safari !== undefined) {
+        return touch.force > 0;
+    } else {
+        return touch.force > 1;
+    }
+}
+
 class SetupForm {
     constructor() {
         this.inner = document.createElement("form");
@@ -388,7 +396,7 @@ class StreamingWindow {
             switch (this.touches.length) {
                 case 0: {
                     let penTouch;
-                    if ((penTouch = newTouches.findIndex(touch => touch.force)) !== -1) {
+                    if ((penTouch = newTouches.findIndex(touch => isTouchForceful(touch))) !== -1) {
                         this.touches = [];
                         this.pushTouch(newTouches[penTouch]);
 
@@ -415,8 +423,8 @@ class StreamingWindow {
 
                 default: {
                     let penTouch;
-                    if ((penTouch = newTouches.findIndex(touch => touch.force)) !== -1) {
-                        if (this.touches.some(touch => touch.force)) {
+                    if ((penTouch = newTouches.findIndex(touch => isTouchForceful(touch))) !== -1) {
+                        if (this.touches.some(touch => isTouchForceful(touch))) {
                             break;
                         }
 
@@ -473,7 +481,7 @@ class StreamingWindow {
             }
         } else {
             let penTouch;
-            if ((penTouch = newTouches.findIndex(touch => touch.force)) !== -1) {
+            if ((penTouch = newTouches.findIndex(touch => isTouchForceful(touch))) !== -1) {
                 // Clear existing touches
                 for (const touch of this.touches) {
                     const message = {
@@ -589,7 +597,7 @@ class StreamingWindow {
             for (const deletedTouch of deletedTouches) {
                 let touch;
                 if (touch = this.touches.find(touch => touch.identifier === deletedTouch.identifier)) {
-                    if (touch.force) {
+                    if (isTouchForceful(touch)) {
                         // End drag
                         const message = {
                             type: "mouseup",
@@ -620,7 +628,7 @@ class StreamingWindow {
     handleTouchMove(event) {
         event.preventDefault();
         const movedTouches = touchListAsArray(event.changedTouches);
-        
+
         if (this.simulateTouchpad) {
             const updatedTouches = touchListAsArray(event.touches);
 
@@ -678,7 +686,7 @@ class StreamingWindow {
             for (const movedTouch of movedTouches) {
                 let touch;
                 if (touch = this.touches.find(touch => touch.identifier === movedTouch.identifier)) {
-                    if (touch.force) {
+                    if (isTouchForceful(touch)) {
                         const message = {
                             type: "mousemoveabs",
                             ...positionInVideo(touch.clientX, touch.clientY, this.video),
