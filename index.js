@@ -531,7 +531,7 @@ class StreamingWindow {
         if (this.simulateTouchpad) {
             switch (this.touches.length) {
                 case 1: {
-                    if (this.touches[0].force) {
+                    if (isTouchForceful(this.touches[0])) {
                         // End drag
                         const message = {
                             type: "mouseup",
@@ -634,7 +634,7 @@ class StreamingWindow {
 
             switch (this.touches.length) {
                 case 1: {
-                    if (this.touches[0].force) {
+                    if (isTouchForceful(this.touches[0])) {
                         const message = {
                             type: "mousemoveabs",
                             ...positionInVideo(
