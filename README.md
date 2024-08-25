@@ -6,7 +6,7 @@
 
 Book of Matthew 5:13
 
-Lux is a video streaming client. Lux can connect to [Tenebra](https://github.com/UE2020/tenebra) to control another machine. Lux supports mouse, touch, and stylus input.
+Lux is a web-based remote desktop client. Lux can connect to [Tenebra](https://github.com/UE2020/tenebra) to control another machine. Lux supports mouse, touch, and stylus input.
 
 ## Usage
 
