@@ -36,7 +36,7 @@ function touchListAsArray(touchList) {
 }
 
 function isTouchForceful(touch) {
-    if (window.safari) {
+    if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
         return touch.force > 0;
     } else {
         return touch.force > 1;
