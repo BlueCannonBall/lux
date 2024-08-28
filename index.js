@@ -36,7 +36,7 @@ function touchListAsArray(touchList) {
 }
 
 function isTouchForceful(touch) {
-    if (window.safari !== undefined) {
+    if (safari) {
         return touch.force > 0;
     } else {
         return touch.force > 1;
