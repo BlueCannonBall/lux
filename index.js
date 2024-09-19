@@ -103,6 +103,17 @@ class SetupForm {
         this.naturalTouchScrollingCheckboxLabelText = document.createTextNode("Natural touch scrolling");
         this.naturalTouchScrollingCheckboxLabel.appendChild(this.naturalTouchScrollingCheckboxLabelText);
 
+        this.fullscreenCheckboxLabel = document.createElement("label");
+        this.fullscreenCheckboxLabel.style.marginBottom = "var(--pico-spacing)";
+        this.inner.appendChild(this.fullscreenCheckboxLabel);
+
+        this.fullscreenCheckbox = document.createElement("input");
+        this.fullscreenCheckbox.type = "checkbox";
+        this.fullscreenCheckboxLabel.appendChild(this.fullscreenCheckbox);
+
+        this.fullscreenCheckboxLabelText = document.createTextNode("Fullscreen");
+        this.fullscreenCheckboxLabel.appendChild(this.fullscreenCheckboxLabelText);
+
         this.submitButton = document.createElement("button");
         this.submitButton.type = "submit";
         this.submitButton.innerText = "Login";
@@ -143,6 +154,7 @@ class SetupForm {
         streamingWindow.startStreaming(
             this.addressInput.value,
             this.passwordInput.value,
+            this.fullscreenCheckbox.checked,
         );
         this.inner.replaceWith(streamingWindow.inner);
     }
@@ -170,7 +182,7 @@ class StreamingWindow {
         this.inner.style.alignItems = "center";
     }
 
-    startStreaming(address, password) {
+    startStreaming(address, password, fullscreen = false) {
         this.inner.ariaBusy = true;
         this.inner.innerText = "Connecting...";
 
@@ -222,6 +234,7 @@ class StreamingWindow {
 
                 if (!this.clientSideMouse) {
                     this.video.onclick = event => {
+                        if (fullscreen) this.video.requestFullscreen();
                         this.video.requestPointerLock();
                     };
                 } else {
