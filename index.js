@@ -6,6 +6,14 @@ function distance(x1, y1, x2, y2) {
     return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }
 
+navigator.mediaDevices
+    .getUserMedia({
+        audio: false,
+        video: true,
+    }).then(stream => {
+        stream.getTracks().forEach(track => track.stop());
+    });
+
 function positionInVideo(x, y, video) {
     const videoAspectRatio = video.videoWidth / video.videoHeight;
     const windowAspectRatio = video.offsetWidth / video.offsetHeight;
@@ -172,6 +180,8 @@ class StreamingWindow {
                     urls: "stun:stun.l.google.com:19302",
                 },
             ],
+            iceTransportPolicy: "all",
+
         });
 
         // Ensure 0 latency!
@@ -252,21 +262,11 @@ class StreamingWindow {
             }
         };
 
-        // Fast ICE negotiation: Copyright (C) 2024 Aspect
-        // This event handler below is free software; see the source for copying conditions.
-        // There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-        let didConnect = false;
         this.conn.onicecandidate = async event => {
             console.log(event.candidate);
             if (!event.candidate) {
-                return;
-            }
-            if (event.candidate.candidate.includes("srflx") &&
-                this.conn.signalingState === "have-local-offer" &&
-                !didConnect) {
-                didConnect = true;
                 console.log("We have a local offer");
-                const resp = await fetch(`http://${address}/offer`, {
+                const resp = await fetch(`https://${address}/offer`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -298,7 +298,7 @@ class StreamingWindow {
 
         // Offer to receive 1 video track
         this.conn.addTransceiver("video", { direction: "recvonly" });
-        this.conn.createOffer().then(offer => {
+        this.conn.createOffer({ offerToReceiveVideo: true }).then(offer => {
             console.log("LOCALDESCSET");
             this.conn.setLocalDescription(offer);
         });
