@@ -185,6 +185,7 @@ class StreamingWindow {
     startStreaming(address, password, fullscreen = false) {
         this.inner.ariaBusy = true;
         this.inner.innerText = "Connecting...";
+        if (fullscreen) this.inner.requestFullscreen();
 
         this.conn = new RTCPeerConnection({
             iceServers: [
@@ -234,7 +235,6 @@ class StreamingWindow {
 
                 if (!this.clientSideMouse) {
                     this.video.onclick = event => {
-                        if (fullscreen) this.video.requestFullscreen();
                         this.video.requestPointerLock();
                     };
                 } else {
