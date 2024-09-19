@@ -6,14 +6,6 @@ function distance(x1, y1, x2, y2) {
     return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }
 
-navigator.mediaDevices
-    .getUserMedia({
-        audio: false,
-        video: true,
-    }).then(stream => {
-        stream.getTracks().forEach(track => track.stop());
-    });
-
 function positionInVideo(x, y, video) {
     const videoAspectRatio = video.videoWidth / video.videoHeight;
     const windowAspectRatio = video.offsetWidth / video.offsetHeight;
@@ -182,9 +174,16 @@ class StreamingWindow {
         this.inner.style.alignItems = "center";
     }
 
-    startStreaming(address, password, fullscreen = false) {
+    async startStreaming(address, password, fullscreen = false) {
         this.inner.ariaBusy = true;
         this.inner.innerText = "Connecting...";
+        
+        await (navigator.mediaDevices
+            .getUserMedia({
+                audio: true,
+                video: false,
+            })).getTracks().forEach(track => track.stop());
+
         if (fullscreen) this.inner.requestFullscreen();
 
         this.conn = new RTCPeerConnection({
@@ -196,6 +195,13 @@ class StreamingWindow {
             iceTransportPolicy: "all",
 
         });
+
+        this.conn.oniceconnectionstatechange = event => {
+            if (this.conn.iceConnectionState === "failed" || this.conn.iceConnectionState === "disconnected") {
+                alert(`The ICE connection state is now: ${this.conn.iceConnectionState}`);
+                window.location.reload();
+            }
+        };
 
         // Ensure 0 latency!
         setInterval(() => {
@@ -276,9 +282,7 @@ class StreamingWindow {
         };
 
         this.conn.onicecandidate = async event => {
-            console.log(event.candidate);
             if (!event.candidate) {
-                console.log("We have a local offer");
                 const resp = await fetch(`https://${address}/offer`, {
                     method: "POST",
                     headers: {
@@ -312,7 +316,6 @@ class StreamingWindow {
         // Offer to receive 1 video track
         this.conn.addTransceiver("video", { direction: "recvonly" });
         this.conn.createOffer({ offerToReceiveVideo: true }).then(offer => {
-            console.log("LOCALDESCSET");
             this.conn.setLocalDescription(offer);
         });
     }
