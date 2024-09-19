@@ -198,7 +198,7 @@ class StreamingWindow {
 
         this.conn.oniceconnectionstatechange = event => {
             if (this.conn.iceConnectionState === "failed" || this.conn.iceConnectionState === "disconnected") {
-                alert(`The ICE connection state is now: ${this.conn.iceConnectionState}`);
+                alert(`The ICE connection state has changed to ${this.conn.iceConnectionState}`);
                 window.location.reload();
             }
         };
