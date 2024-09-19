@@ -184,7 +184,7 @@ class StreamingWindow {
         });
         stream.getTracks().forEach(track => track.stop());
 
-        if (fullscreen) document.body.requestFullscreen();
+        if (fullscreen) this.inner.requestFullscreen();
 
         this.conn = new RTCPeerConnection({
             iceServers: [
