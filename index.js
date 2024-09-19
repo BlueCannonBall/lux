@@ -178,11 +178,11 @@ class StreamingWindow {
         this.inner.ariaBusy = true;
         this.inner.innerText = "Connecting...";
         
-        await (navigator.mediaDevices
-            .getUserMedia({
-                audio: true,
-                video: false,
-            })).getTracks().forEach(track => track.stop());
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: false,
+        });
+        stream.getTracks().forEach(track => track.stop());
 
         if (fullscreen) this.inner.requestFullscreen();
 
