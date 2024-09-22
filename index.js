@@ -315,7 +315,7 @@ class StreamingWindow {
 
         // Offer to receive 1 video track
         this.conn.addTransceiver("video", { direction: "recvonly" });
-        this.conn.createOffer({ offerToReceiveVideo: true }).then(offer => {
+        this.conn.createOffer().then(offer => {
             this.conn.setLocalDescription(offer);
         });
     }
