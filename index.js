@@ -1,3 +1,9 @@
+window.onerror = (message, source, lineno, colno, error) => {
+    alert(`An error occured at ${lineno}:${colno}: ${message}`);
+    window.location.reload();
+    return false;
+}
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
