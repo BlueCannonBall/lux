@@ -172,11 +172,15 @@ class StreamingWindow {
         this.inner.ariaBusy = true;
         this.inner.innerText = "Connecting...";
         
-        const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: false,
-        });
-        stream.getTracks().forEach(track => track.stop());
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: true,
+            });
+            stream.getTracks().forEach(track => track.stop());
+        } catch (e) {
+            this.inner.innerText += " (without TCP support, due to insufficient permissions)";
+        }
 
         this.conn = new RTCPeerConnection({
             iceServers: [
@@ -184,8 +188,6 @@ class StreamingWindow {
                     urls: "stun:stun.l.google.com:19302",
                 },
             ],
-            iceTransportPolicy: "all",
-
         });
 
         this.conn.oniceconnectionstatechange = event => {
