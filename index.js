@@ -314,6 +314,10 @@ class StreamingWindow {
         });
     }
 
+    channelsOpen() {
+        return this.orderedChannel.readyState === "open" && this.unorderedChannel.readyState === "open";
+    }
+
     pushTouch(touch) {
         this.touches.push({
             identifier: touch.identifier,
@@ -332,14 +336,14 @@ class StreamingWindow {
                 type: "mousemoveabs",
                 ...positionInVideo(event.clientX, event.clientY, this.video),
             };
-            this.orderedChannel.send(JSON.stringify(message));
+            if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
         } else {
             const message = {
                 type: "mousemove",
                 x: Math.round(event.movementX),
                 y: Math.round(event.movementY),
             };
-            this.unorderedChannel.send(JSON.stringify(message));
+            if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
         }
     }
 
@@ -348,7 +352,7 @@ class StreamingWindow {
             type: "mousedown",
             button: event.button,
         };
-        this.orderedChannel.send(JSON.stringify(message));
+        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
     }
 
     handleMouseUp(event) {
@@ -356,7 +360,7 @@ class StreamingWindow {
             type: "mouseup",
             button: event.button,
         };
-        this.orderedChannel.send(JSON.stringify(message));
+        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
     }
 
     handleWheel(event) {
@@ -371,7 +375,7 @@ class StreamingWindow {
                 x: Math.round(this.wheelX),
                 y: Math.round(this.wheelY),
             };
-            this.unorderedChannel.send(JSON.stringify(message));
+            if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
 
             this.wheelX = 0;
             this.wheelY = 0;
@@ -385,7 +389,7 @@ class StreamingWindow {
             type: "keydown",
             key: event.code,
         };
-        this.orderedChannel.send(JSON.stringify(message));
+        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
     }
 
     handleKeyUp(event) {
@@ -395,7 +399,7 @@ class StreamingWindow {
             type: "keyup",
             key: event.code,
         };
-        this.orderedChannel.send(JSON.stringify(message));
+        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
     }
 
     handleTouchStart(event) {
@@ -419,12 +423,12 @@ class StreamingWindow {
                                 this.video,
                             ),
                         };
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                         message = {
                             type: "mousedown",
                             button: 0,
                         };
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
 
                         return;
                     }
@@ -443,9 +447,9 @@ class StreamingWindow {
                             type: "mouseup",
                         };
                         message.button = 0;
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                         message.button = 2;
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
 
                         this.touches = [];
                         this.pushTouch(newTouches[penTouch]);
@@ -459,12 +463,12 @@ class StreamingWindow {
                                 this.video,
                             ),
                         };
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                         message = {
                             type: "mousedown",
                             button: 0,
                         };
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
 
                         return;
                     }
@@ -485,7 +489,7 @@ class StreamingWindow {
                         type: "mousedown",
                         button: 0,
                     };
-                    this.orderedChannel.send(JSON.stringify(message));
+                    if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                     break;
                 }
             }
@@ -498,7 +502,7 @@ class StreamingWindow {
                         type: "touchend",
                         id: Math.abs(touch.identifier) % 10,
                     };
-                    this.orderedChannel.send(JSON.stringify(message));
+                    if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                 }
                 this.touches = [];
                 this.pushTouch(newTouches[penTouch]);
@@ -512,12 +516,12 @@ class StreamingWindow {
                         this.video,
                     ),
                 };
-                this.orderedChannel.send(JSON.stringify(message));
+                if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                 message = {
                     type: "mousedown",
                     button: 0,
                 };
-                this.orderedChannel.send(JSON.stringify(message));
+                if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
             } else {
                 for (const touch of newTouches) {
                     if (touch.radiusX <= 75 && touch.radiusY <= 75) {
@@ -526,7 +530,7 @@ class StreamingWindow {
                             id: Math.abs(touch.identifier) % 10,
                             ...positionInVideo(touch.clientX, touch.clientY, this.video),
                         };
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                         this.pushTouch(touch);
                     }
                 }
@@ -547,16 +551,16 @@ class StreamingWindow {
                             type: "mouseup",
                             button: 0,
                         };
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                     } else if (Date.now() - this.lastRightClickTime > 125 &&
                         Date.now() - this.touches[0].startTime <= 125) {
                         const message = {
                             button: 0,
                         };
                         message.type = "mousedown";
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                         message.type = "mouseup";
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
 
                         // Make lone touches linger to improve two-finger tap detection
                         await sleep(125);
@@ -584,9 +588,9 @@ class StreamingWindow {
                             button: 2,
                         };
                         message.type = "mousedown";
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                         message.type = "mouseup";
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
 
                         this.lastRightClickTime = Date.now();
                     }
@@ -599,7 +603,7 @@ class StreamingWindow {
                         type: "mouseup",
                         button: 0,
                     };
-                    this.orderedChannel.send(JSON.stringify(message));
+                    if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                     break;
                 }
             }
@@ -613,13 +617,13 @@ class StreamingWindow {
                             type: "mouseup",
                             button: 0,
                         };
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                     } else {
                         const message = {
                             type: "touchend",
                             id: Math.abs(touch.identifier) % 10,
                         };
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                     }
                 }
             }
@@ -653,14 +657,14 @@ class StreamingWindow {
                                 this.video,
                             ),
                         };
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                     } else {
                         const message = {
                             type: "mousemove",
                             x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * 1.5),
                             y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * 1.5),
                         };
-                        this.unorderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
                     }
                     break;
                 }
@@ -677,7 +681,7 @@ class StreamingWindow {
                             x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * (this.naturalTouchScrolling ? -1 : 1) * 8),
                             y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * (this.naturalTouchScrolling ? -1 : 1) * 8),
                         };
-                        this.unorderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
                     }
                     break;
                 }
@@ -688,7 +692,7 @@ class StreamingWindow {
                         x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * 1.5),
                         y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * 1.5),
                     };
-                    this.unorderedChannel.send(JSON.stringify(message));
+                    if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
                     break;
                 }
             }
@@ -701,14 +705,14 @@ class StreamingWindow {
                             type: "mousemoveabs",
                             ...positionInVideo(touch.clientX, touch.clientY, this.video),
                         };
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                     } else {
                         const message = {
                             type: "touchmove",
                             id: Math.abs(touch.identifier) % 10,
                             ...positionInVideo(touch.clientX, touch.clientY, this.video),
                         };
-                        this.orderedChannel.send(JSON.stringify(message));
+                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
                     }
                 }
             }
