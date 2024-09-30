@@ -41,11 +41,34 @@ function touchListAsArray(touchList) {
     return ret;
 }
 
+function isSafari() {
+    return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+}
+
 function isTouchForceful(touch) {
-    if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
+    if (isSafari()) {
         return touch.force > 0;
     } else {
         return touch.force > 1;
+    }
+}
+
+class Checkbox {
+    constructor(label, checked = false) {
+        this.inner = document.createElement("label");
+        this.inner.style.marginBottom = "var(--pico-spacing)";
+
+        this.checkbox = document.createElement("input");
+        this.checkbox.type = "checkbox";
+        this.checkbox.checked = checked;
+        this.inner.appendChild(this.checkbox);
+
+        this.label = document.createTextNode(label);
+        this.inner.appendChild(this.label);
+    }
+
+    get checked() {
+        return this.checkbox.checked;
     }
 }
 
@@ -68,38 +91,14 @@ class SetupForm {
         this.passwordInput.placeholder = "Password";
         this.inner.appendChild(this.passwordInput);
 
-        this.clientSideMouseCheckboxLabel = document.createElement("label");
-        this.clientSideMouseCheckboxLabel.style.marginBottom = "var(--pico-spacing)";
-        this.inner.appendChild(this.clientSideMouseCheckboxLabel);
+        this.clientSideMouseCheckbox = new Checkbox("Client-side mouse");
+        this.inner.appendChild(this.clientSideMouseCheckbox.inner);
 
-        this.clientSideMouseCheckbox = document.createElement("input");
-        this.clientSideMouseCheckbox.type = "checkbox";
-        this.clientSideMouseCheckboxLabel.appendChild(this.clientSideMouseCheckbox);
+        this.simulateTouchpadCheckbox = new Checkbox("Simulate touchpad");
+        this.inner.appendChild(this.simulateTouchpadCheckbox.inner);
 
-        this.clientSideMouseCheckboxLabelText = document.createTextNode("Client-side mouse");
-        this.clientSideMouseCheckboxLabel.appendChild(this.clientSideMouseCheckboxLabelText);
-
-        this.simulateTouchpadCheckboxLabel = document.createElement("label");
-        this.simulateTouchpadCheckboxLabel.style.marginBottom = "var(--pico-spacing)";
-        this.inner.appendChild(this.simulateTouchpadCheckboxLabel);
-
-        this.simulateTouchpadCheckbox = document.createElement("input");
-        this.simulateTouchpadCheckbox.type = "checkbox";
-        this.simulateTouchpadCheckboxLabel.appendChild(this.simulateTouchpadCheckbox);
-
-        this.simulateTouchpadCheckboxLabelText = document.createTextNode("Simulate touchpad");
-        this.simulateTouchpadCheckboxLabel.appendChild(this.simulateTouchpadCheckboxLabelText);
-
-        this.naturalTouchScrollingCheckboxLabel = document.createElement("label");
-        this.naturalTouchScrollingCheckboxLabel.style.marginBottom = "var(--pico-spacing)";
-        this.inner.appendChild(this.naturalTouchScrollingCheckboxLabel);
-
-        this.naturalTouchScrollingCheckbox = document.createElement("input");
-        this.naturalTouchScrollingCheckbox.type = "checkbox";
-        this.naturalTouchScrollingCheckboxLabel.appendChild(this.naturalTouchScrollingCheckbox);
-
-        this.naturalTouchScrollingCheckboxLabelText = document.createTextNode("Natural touch scrolling");
-        this.naturalTouchScrollingCheckboxLabel.appendChild(this.naturalTouchScrollingCheckboxLabelText);
+        this.naturalTouchScrollingCheckbox = new Checkbox("Natural touch scrolling");
+        this.inner.appendChild(this.naturalTouchScrollingCheckbox.inner);
 
         this.submitButton = document.createElement("button");
         this.submitButton.type = "submit";
@@ -369,16 +368,30 @@ class StreamingWindow {
         this.wheelX += event.deltaX;
         this.wheelY += event.deltaY;
 
-        if (Math.abs(this.wheelX) >= 120 || Math.abs(this.wheelY) >= 120) {
-            const message = {
-                type: "wheel",
-                x: Math.round(this.wheelX),
-                y: Math.round(this.wheelY),
-            };
-            if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+        if (isSafari()) {
+            if (Math.abs(this.wheelX) >= 120 / 3 || Math.abs(this.wheelY) >= 120 / 3) {
+                const message = {
+                    type: "wheel",
+                    x: Math.round(this.wheelX),
+                    y: Math.round(this.wheelY),
+                };
+                if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
 
-            this.wheelX = 0;
-            this.wheelY = 0;
+                this.wheelX = 0;
+                this.wheelY = 0;
+            }
+        } else {
+            if (Math.abs(this.wheelX) >= 120 || Math.abs(this.wheelY) >= 120) {
+                const message = {
+                    type: "wheel",
+                    x: Math.round(this.wheelX),
+                    y: Math.round(this.wheelY),
+                };
+                if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+
+                this.wheelX = 0;
+                this.wheelY = 0;
+            }
         }
     }
 
