@@ -234,7 +234,9 @@ class StreamingWindow {
 
                 if (!this.clientSideMouse) {
                     this.video.onclick = event => {
-                        this.video.requestPointerLock();
+                        try {
+                            this.video.requestPointerLock();
+                        } catch {}
                     };
                 } else {
                     document.addEventListener("contextmenu", event => event.preventDefault());
