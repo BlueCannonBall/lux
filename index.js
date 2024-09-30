@@ -372,8 +372,8 @@ class StreamingWindow {
             if (Math.abs(this.wheelX) >= 120 / 3 || Math.abs(this.wheelY) >= 120 / 3) {
                 const message = {
                     type: "wheel",
-                    x: Math.round(this.wheelX),
-                    y: Math.round(this.wheelY),
+                    x: Math.round(this.wheelX * 3),
+                    y: Math.round(this.wheelY * 3),
                 };
                 if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
 
