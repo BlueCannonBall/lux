@@ -234,14 +234,12 @@ class StreamingWindow {
 
                 if (!this.clientSideMouse) {
                     this.video.onclick = event => {
-                        try {
+                        if (this.video.requestPointerLock) {
                             this.video.requestPointerLock({
                                 unadjustedMovement: true,
-                            });
-                        } catch {
-                            try {
+                            }).catch(() => {
                                 this.video.requestPointerLock();
-                            } catch {}
+                            });
                         }
                     };
                 } else {
