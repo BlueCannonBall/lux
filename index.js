@@ -238,7 +238,11 @@ class StreamingWindow {
                             this.video.requestPointerLock({
                                 unadjustedMovement: true,
                             });
-                        } catch {}
+                        } catch {
+                            try {
+                                this.video.requestPointerLock();
+                            } catch {}
+                        }
                     };
                 } else {
                     document.addEventListener("contextmenu", event => event.preventDefault());
