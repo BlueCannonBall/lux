@@ -235,7 +235,9 @@ class StreamingWindow {
                 if (!this.clientSideMouse) {
                     this.video.onclick = event => {
                         try {
-                            this.video.requestPointerLock();
+                            this.video.requestPointerLock({
+                                unadjustedMovement: true,
+                            });
                         } catch {}
                     };
                 } else {
