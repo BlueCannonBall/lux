@@ -196,15 +196,6 @@ class StreamingWindow {
             }
         };
 
-        // Ensure 0 latency!
-        setInterval(() => {
-            const receivers = this.conn.getReceivers();
-            for (const receiver of receivers) {
-                receiver.jitterBufferTarget =
-                    receiver.jitterBufferDelayHint = receiver.playoutDelayHint = 0;
-            }
-        });
-
         this.orderedChannel = this.conn.createDataChannel("ordered-input", {
             ordered: true,
         });
@@ -217,8 +208,6 @@ class StreamingWindow {
         };
 
         this.conn.ontrack = event => {
-            event.transceiver.receiver.jitterBufferTarget = event.transceiver.receiver.jitterBufferDelayHint = event.transceiver.receiver.playoutDelayHint = 0;
-
             const media = document.createElement(event.track.kind);
             media.setAttribute("webkit-playsinline", "");
             media.setAttribute("playsinline", "");
