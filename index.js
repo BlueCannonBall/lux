@@ -82,7 +82,7 @@ class SetupForm {
 
         this.addressInput = document.createElement("input");
         this.addressInput.type = "text";
-        this.addressInput.placeholder = "IP Address";
+        this.addressInput.placeholder = "Address";
         this.inner.appendChild(this.addressInput);
 
         this.passwordInput = document.createElement("input");
