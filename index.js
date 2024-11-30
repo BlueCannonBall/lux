@@ -291,7 +291,36 @@ class StreamingWindow {
                 if (resp.status === 200) {
                     const answer = await resp.text();
                     try {
-                        this.conn.setRemoteDescription(new RTCSessionDescription(JSON.parse(atob(JSON.parse(answer).Offer))));
+                        function modifyCandidates(sdp) {
+                            // Split the SDP into lines
+                            const lines = sdp.split('\n');
+                            const modifiedLines = lines.map(line => {
+                                // Match srflx candidates with udp
+                                const match = line.match(
+                                    /candidate:(\S+) 1 udp (\d+) (\d+\.\d+\.\d+\.\d+) (\d+) typ srflx(?: ufrag \S+)?/i
+                                );
+                                if (match) {
+                                    const [
+                                        ,
+                                        foundation, priority, ip, port
+                                    ] = match;
+
+                                    // Modify the candidate line
+                                    return `a=candidate:${foundation} 1 UDP ${priority} ${ip} ${port} typ srflx raddr 0.0.0.0 rport 0`;
+                                }
+                                // Return unmodified line if it doesn't match
+                                return line;
+                            });
+
+                            // Join the modified lines back into an SDP string
+                            return modifiedLines.join('\n');
+                        }
+
+                        let sessionDescription = JSON.parse(atob(JSON.parse(answer).Offer));
+                        console.log(sessionDescription.sdp);
+                        sessionDescription.sdp = modifyCandidates(sessionDescription.sdp);
+                        console.log(sessionDescription.sdp);
+                        this.conn.setRemoteDescription(new RTCSessionDescription(sessionDescription));
                     } catch (e) {
                         alert(`Error: ${e}`);
                         window.location.reload();
