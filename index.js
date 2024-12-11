@@ -153,6 +153,9 @@ class StreamingWindow {
         this.simulateTouchpad = simulateTouchpad;
         this.naturalTouchScrolling = naturalTouchScrolling;
 
+        this.virtualMouseX = 0;
+        this.virtualMouseY = 0;
+
         this.wheelX = 0;
         this.wheelY = 0;
 
@@ -170,7 +173,7 @@ class StreamingWindow {
     async startStreaming(address, password) {
         this.inner.ariaBusy = true;
         this.inner.innerText = "Connecting...";
-        
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: false,
@@ -223,6 +226,16 @@ class StreamingWindow {
                 this.video.style.flex = "1";
                 this.video.style.minWidth = "0";
 
+                this.canvas = document.createElement("canvas");
+                this.ctx = this.canvas.getContext("2d");
+                this.canvas.width = window.innerWidth * window.devicePixelRatio;
+                this.canvas.height = window.innerHeight * window.devicePixelRatio;
+                this.canvas.style.position = "absolute";
+                this.canvas.style.top = '0';
+                this.canvas.style.left = '0';
+                this.canvas.style.width = "100%";
+                this.canvas.style.height = "100%";
+
                 if (!this.clientSideMouse) {
                     this.video.onclick = event => {
                         if (this.video.requestPointerLock) {
@@ -235,10 +248,17 @@ class StreamingWindow {
                     };
                 } else {
                     document.addEventListener("contextmenu", event => event.preventDefault());
+                    if (this.simulateTouchpad) {
+                        requestAnimationFrame(this.drawVirtualMouse.bind(this));
+                    }
                 }
-                this.video.addEventListener("mousemove", this.handleMouseMove.bind(this));
-                this.video.addEventListener("mousedown", this.handleMouseDown.bind(this));
-                this.video.addEventListener("mouseup", this.handleMouseUp.bind(this));
+                window.addEventListener("resize", event => {
+                    this.canvas.width = window.innerWidth * window.devicePixelRatio;
+                    this.canvas.height = window.innerHeight * window.devicePixelRatio;
+                });
+                this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this));
+                this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this));
+                this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this));
                 document.addEventListener("wheel", this.handleWheel.bind(this), {
                     passive: false,
                 });
@@ -248,16 +268,16 @@ class StreamingWindow {
                 document.addEventListener("keyup", this.handleKeyUp.bind(this), {
                     passive: false,
                 });
-                this.video.addEventListener("touchstart", this.handleTouchStart.bind(this), {
+                this.canvas.addEventListener("touchstart", this.handleTouchStart.bind(this), {
                     passive: false,
                 });
-                this.video.addEventListener("touchend", this.handleTouchEnd.bind(this), { 
+                this.canvas.addEventListener("touchend", this.handleTouchEnd.bind(this), {
                     passive: false,
                 });
-                this.video.addEventListener("touchcancel", this.handleTouchEnd.bind(this), { 
+                this.canvas.addEventListener("touchcancel", this.handleTouchEnd.bind(this), {
                     passive: false,
                 });
-                this.video.addEventListener("touchmove", this.handleTouchMove.bind(this), {
+                this.canvas.addEventListener("touchmove", this.handleTouchMove.bind(this), {
                     passive: false,
                 });
 
@@ -267,7 +287,9 @@ class StreamingWindow {
                 this.inner.style.removeProperty("align-items");
                 this.inner.style.flex = "1";
                 this.inner.style.minHeight = "0";
+
                 this.inner.appendChild(this.video);
+                this.inner.appendChild(this.canvas);
             }
         };
 
@@ -341,6 +363,25 @@ class StreamingWindow {
 
     channelsOpen() {
         return this.orderedChannel.readyState === "open" && this.unorderedChannel.readyState === "open";
+    }
+
+    setVirtualMousePosition(x, y) {
+        this.virtualMouseX = Math.min(Math.max(x, 0), window.innerWidth);
+        this.virtualMouseY = Math.min(Math.max(y, 0), window.innerHeight);
+    }
+
+    moveVirtualMouse(x, y) {
+        this.setVirtualMousePosition(this.virtualMouseX + x, this.virtualMouseY + y);
+    }
+
+    drawVirtualMouse() {
+        this.ctx = this.canvas.getContext("2d");
+        this.ctx.clearRect(0, 0, this.canvas.width * window.devicePixelRatio, this.canvas.height * window.devicePixelRatio);
+        this.ctx.beginPath();
+        this.ctx.arc(this.virtualMouseX * window.devicePixelRatio, this.virtualMouseY * window.devicePixelRatio, 8 * window.devicePixelRatio, 0, 2 * Math.PI, false);
+        this.ctx.fillStyle = "#0172AD80";
+        this.ctx.fill();
+        requestAnimationFrame(this.drawVirtualMouse.bind(this));
     }
 
     pushTouch(touch) {
@@ -561,6 +602,10 @@ class StreamingWindow {
                     button: 0,
                 };
                 if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+
+                if (this.clientSideMouse) {
+                    this.setVirtualMousePosition(this.touches[0].clientX, this.touches[0].clientY);
+                }
             } else {
                 for (const touch of newTouches) {
                     if (touch.radiusX <= 75 && touch.radiusY <= 75) {
@@ -697,13 +742,29 @@ class StreamingWindow {
                             ),
                         };
                         if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+
+                        if (this.clientSideMouse) {
+                            this.setVirtualMousePosition(updatedTouches[0].clientX, updatedTouches[0].clientY);
+                        }
                     } else {
-                        const message = {
-                            type: "mousemove",
-                            x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * 1.5),
-                            y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * 1.5),
-                        };
-                        if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+                        if (this.clientSideMouse) {
+                            this.moveVirtualMouse(
+                                (updatedTouches[0].clientX - this.touches[0].clientX) * 1.5,
+                                (updatedTouches[0].clientY - this.touches[0].clientY) * 1.5,
+                            );
+                            const message = {
+                                type: "mousemoveabs",
+                                ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
+                            };
+                            if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+                        } else {
+                            const message = {
+                                type: "mousemove",
+                                x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * 1.5),
+                                y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * 1.5),
+                            };
+                            if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+                        }
                     }
                     break;
                 }
@@ -726,12 +787,24 @@ class StreamingWindow {
                 }
 
                 case 3: {
-                    const message = {
-                        type: "mousemove",
-                        x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * 1.5),
-                        y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * 1.5),
-                    };
-                    if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+                    if (this.clientSideMouse) {
+                        this.moveVirtualMouse(
+                            (updatedTouches[0].clientX - this.touches[0].clientX) * 1.5,
+                            (updatedTouches[0].clientY - this.touches[0].clientY) * 1.5,
+                        );
+                        const message = {
+                            type: "mousemoveabs",
+                            ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
+                        };
+                        if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+                    } else {
+                        const message = {
+                            type: "mousemove",
+                            x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * 1.5),
+                            y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * 1.5),
+                        };
+                        if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+                    }
                     break;
                 }
             }
