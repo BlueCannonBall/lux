@@ -376,7 +376,7 @@ class StreamingWindow {
         if (this.mouseImage.complete) {
             this.ctx.clearRect(0, 0, this.canvas.width * window.devicePixelRatio, this.canvas.height * window.devicePixelRatio);
             this.ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
-            this.ctx.shadowBlur = 7.5;
+            this.ctx.shadowBlur = 7;
             this.ctx.shadowOffsetX = 1 * window.devicePixelRatio;
             this.ctx.shadowOffsetY = 1 * window.devicePixelRatio;
             this.ctx.drawImage(
