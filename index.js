@@ -140,6 +140,7 @@ class SetupForm {
         streamingWindow.startStreaming(
             this.addressInput.value,
             this.passwordInput.value,
+            true,
         );
         this.inner.replaceWith(streamingWindow.inner);
     }
@@ -172,18 +173,20 @@ class StreamingWindow {
         this.inner.style.alignItems = "center";
     }
 
-    async startStreaming(address, password) {
+    async startStreaming(address, password, askCamera) {
         this.inner.ariaBusy = true;
         this.inner.innerText = "Connecting...";
 
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: false,
-                video: true,
-            });
-            stream.getTracks().forEach(track => track.stop());
-        } catch (e) {
-            this.inner.innerText += " (without TCP support, due to insufficient permissions)";
+        if (askCamera) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: true,
+                });
+                stream.getTracks().forEach(track => track.stop());
+            } catch (e) {
+                this.inner.innerText += " (without TCP support, due to insufficient permissions)";
+            }
         }
 
         this.conn = new RTCPeerConnection({
@@ -204,7 +207,7 @@ class StreamingWindow {
                     this.simulateTouchpad,
                     this.naturalTouchScrolling,
                 );
-                streamingWindow.startStreaming(address, password);
+                streamingWindow.startStreaming(address, password, false);
                 this.inner.replaceWith(streamingWindow.inner);
             }
         }, { signal: this.abortController.signal });
