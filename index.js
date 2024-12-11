@@ -153,8 +153,8 @@ class StreamingWindow {
         this.simulateTouchpad = simulateTouchpad;
         this.naturalTouchScrolling = naturalTouchScrolling;
 
-        this.virtualMouseX = 0;
-        this.virtualMouseY = 0;
+        this.virtualMouseX = window.innerWidth / 2;
+        this.virtualMouseY = window.innerHeight / 2;
 
         this.wheelX = 0;
         this.wheelY = 0;
@@ -363,10 +363,6 @@ class StreamingWindow {
         });
     }
 
-    channelsOpen() {
-        return this.orderedChannel.readyState === "open" && this.unorderedChannel.readyState === "open";
-    }
-
     moveVirtualMouse(x, y) {
         this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), window.innerWidth);
         this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), window.innerHeight);
@@ -402,20 +398,32 @@ class StreamingWindow {
         });
     }
 
+    sendOrdered(message) {
+        if (this.orderedChannel.readyState === "open") {
+            this.orderedChannel.send(JSON.stringify(object));
+        }
+    }
+
+    sendUnordered(message) {
+        if (this.unorderedChannel.readyState === "open") {
+            this.unorderedChannel.send(JSON.stringify(object));
+        }
+    }
+
     handleMouseMove(event) {
         if (this.clientSideMouse) {
             const message = {
                 type: "mousemoveabs",
                 ...positionInVideo(event.clientX, event.clientY, this.video),
             };
-            if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+            this.sendOrdered(message);
         } else {
             const message = {
                 type: "mousemove",
                 x: Math.round(event.movementX),
                 y: Math.round(event.movementY),
             };
-            if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+            this.sendUnordered(message);
         }
     }
 
@@ -424,7 +432,7 @@ class StreamingWindow {
             type: "mousedown",
             button: event.button,
         };
-        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+        this.sendOrdered(message);
     }
 
     handleMouseUp(event) {
@@ -432,7 +440,7 @@ class StreamingWindow {
             type: "mouseup",
             button: event.button,
         };
-        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+        this.sendOrdered(message);
     }
 
     handleWheel(event) {
@@ -448,7 +456,7 @@ class StreamingWindow {
                     x: Math.round(this.wheelX * 3),
                     y: Math.round(this.wheelY * 3),
                 };
-                if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+                this.sendUnordered(message);
 
                 this.wheelX = 0;
                 this.wheelY = 0;
@@ -460,7 +468,7 @@ class StreamingWindow {
                     x: Math.round(this.wheelX),
                     y: Math.round(this.wheelY),
                 };
-                if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+                this.sendUnordered(message);
 
                 this.wheelX = 0;
                 this.wheelY = 0;
@@ -475,7 +483,7 @@ class StreamingWindow {
             type: "keydown",
             key: event.code,
         };
-        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+        this.sendOrdered(message);
     }
 
     handleKeyUp(event) {
@@ -485,7 +493,7 @@ class StreamingWindow {
             type: "keyup",
             key: event.code,
         };
-        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+        this.sendOrdered(message);
     }
 
     handleTouchStart(event) {
@@ -509,12 +517,12 @@ class StreamingWindow {
                                 this.video,
                             ),
                         };
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
                         message = {
                             type: "mousedown",
                             button: 0,
                         };
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
 
                         return;
                     }
@@ -533,9 +541,9 @@ class StreamingWindow {
                             type: "mouseup",
                         };
                         message.button = 0;
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
                         message.button = 2;
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
 
                         this.touches = [];
                         this.pushTouch(newTouches[penTouch]);
@@ -549,12 +557,12 @@ class StreamingWindow {
                                 this.video,
                             ),
                         };
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
                         message = {
                             type: "mousedown",
                             button: 0,
                         };
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
 
                         return;
                     }
@@ -570,12 +578,20 @@ class StreamingWindow {
 
             switch (this.touches.length) {
                 case 3: {
+                    if (this.clientSideMouse) {
+                        const message = {
+                            type: "mousemoveabs",
+                            ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
+                        };
+                        this.sendOrdered(message);
+                    }
+
                     // Start drag
                     const message = {
                         type: "mousedown",
                         button: 0,
                     };
-                    if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                    this.sendOrdered(message);
                     break;
                 }
             }
@@ -588,7 +604,7 @@ class StreamingWindow {
                         type: "touchend",
                         id: Math.abs(touch.identifier) % 10,
                     };
-                    if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                    this.sendOrdered(message);
                 }
                 this.touches = [];
                 this.pushTouch(newTouches[penTouch]);
@@ -602,12 +618,12 @@ class StreamingWindow {
                         this.video,
                     ),
                 };
-                if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                this.sendOrdered(message);
                 message = {
                     type: "mousedown",
                     button: 0,
                 };
-                if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                this.sendOrdered(message);
             } else {
                 for (const touch of newTouches) {
                     if (touch.radiusX <= 75 && touch.radiusY <= 75) {
@@ -616,7 +632,7 @@ class StreamingWindow {
                             id: Math.abs(touch.identifier) % 10,
                             ...positionInVideo(touch.clientX, touch.clientY, this.video),
                         };
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
                         this.pushTouch(touch);
                     }
                 }
@@ -637,16 +653,24 @@ class StreamingWindow {
                             type: "mouseup",
                             button: 0,
                         };
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
                     } else if (Date.now() - this.lastRightClickTime > 125 &&
                         Date.now() - this.touches[0].startTime <= 125) {
+                        if (this.clientSideMouse) {
+                            const message = {
+                                type: "mousemoveabs",
+                                ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
+                            };
+                            this.sendOrdered(message);
+                        }
+
                         const message = {
                             button: 0,
                         };
                         message.type = "mousedown";
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
                         message.type = "mouseup";
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
 
                         // Make lone touches linger to improve two-finger tap detection
                         await sleep(125);
@@ -670,13 +694,21 @@ class StreamingWindow {
                             this.touches[1].clientX,
                             this.touches[1].clientY,
                         ) >= 20) {
+                        if (this.clientSideMouse) {
+                            const message = {
+                                type: "mousemoveabs",
+                                ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
+                            };
+                            this.sendOrdered(message);
+                        }
+
                         const message = {
                             button: 2,
                         };
                         message.type = "mousedown";
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
                         message.type = "mouseup";
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
 
                         this.lastRightClickTime = Date.now();
                     }
@@ -689,7 +721,7 @@ class StreamingWindow {
                         type: "mouseup",
                         button: 0,
                     };
-                    if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                    this.sendOrdered(message);
                     break;
                 }
             }
@@ -703,13 +735,13 @@ class StreamingWindow {
                             type: "mouseup",
                             button: 0,
                         };
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
                     } else {
                         const message = {
                             type: "touchend",
                             id: Math.abs(touch.identifier) % 10,
                         };
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
                     }
                 }
             }
@@ -743,7 +775,7 @@ class StreamingWindow {
                                 this.video,
                             ),
                         };
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
                     } else {
                         if (this.clientSideMouse) {
                             this.moveVirtualMouse(
@@ -754,14 +786,14 @@ class StreamingWindow {
                                 type: "mousemoveabs",
                                 ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
                             };
-                            if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+                            this.sendOrdered(message);
                         } else {
                             const message = {
                                 type: "mousemove",
                                 x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * 1.5),
                                 y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * 1.5),
                             };
-                            if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+                            this.sendUnordered(message);
                         }
                     }
                     break;
@@ -779,7 +811,7 @@ class StreamingWindow {
                             x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * (this.naturalTouchScrolling ? -1 : 1) * 8),
                             y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * (this.naturalTouchScrolling ? -1 : 1) * 8),
                         };
-                        if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+                        this.sendUnordered(message);
                     }
                     break;
                 }
@@ -794,14 +826,14 @@ class StreamingWindow {
                             type: "mousemoveabs",
                             ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
                         };
-                        if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
                     } else {
                         const message = {
                             type: "mousemove",
                             x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * 1.5),
                             y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * 1.5),
                         };
-                        if (this.channelsOpen()) this.unorderedChannel.send(JSON.stringify(message));
+                        this.sendUnordered(message);
                     }
                     break;
                 }
@@ -815,14 +847,14 @@ class StreamingWindow {
                             type: "mousemoveabs",
                             ...positionInVideo(touch.clientX, touch.clientY, this.video),
                         };
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
                     } else {
                         const message = {
                             type: "touchmove",
                             id: Math.abs(touch.identifier) % 10,
                             ...positionInVideo(touch.clientX, touch.clientY, this.video),
                         };
-                        if (this.channelsOpen()) this.orderedChannel.send(JSON.stringify(message));
+                        this.sendOrdered(message);
                     }
                 }
             }
