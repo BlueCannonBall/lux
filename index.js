@@ -272,7 +272,9 @@ class StreamingWindow {
                 window.addEventListener("resize", event => {
                     this.canvas.width = window.innerWidth * window.devicePixelRatio;
                     this.canvas.height = window.innerHeight * window.devicePixelRatio;
-                    this.drawVirtualMouse();
+                    if (this.clientSideMouse && this.simulateTouchpad && this.mouseImage.complete) {
+                        this.drawVirtualMouse();
+                    }
                 }, { signal: this.abortController.signal });
                 this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this), { signal: this.abortController.signal });
                 this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this), { signal: this.abortController.signal });
