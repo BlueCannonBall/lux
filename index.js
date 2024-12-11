@@ -147,7 +147,13 @@ class SetupForm {
 }
 
 class StreamingWindow {
-    constructor(clientSideMouse = false, simulateTouchpad = false, naturalTouchScrolling = false) {
+    constructor(
+        clientSideMouse = false,
+        simulateTouchpad = false,
+        naturalTouchScrolling = false,
+        virtualMouseX = window.innerWidth / 2,
+        virtualMouseY = window.innerHeight / 2,
+    ) {
         this.inner = document.createElement("div");
 
         this.clientSideMouse = clientSideMouse;
@@ -156,8 +162,8 @@ class StreamingWindow {
 
         this.abortController = new AbortController();
 
-        this.virtualMouseX = window.innerWidth / 2;
-        this.virtualMouseY = window.innerHeight / 2;
+        this.virtualMouseX = virtualMouseX
+        this.virtualMouseY = virtualMouseY;
 
         this.wheelX = 0;
         this.wheelY = 0;
@@ -206,6 +212,8 @@ class StreamingWindow {
                     this.clientSideMouse,
                     this.simulateTouchpad,
                     this.naturalTouchScrolling,
+                    this.virtualMouseX,
+                    this.virtualMouseY,
                 );
                 streamingWindow.startStreaming(address, password, false);
                 this.inner.replaceWith(streamingWindow.inner);
