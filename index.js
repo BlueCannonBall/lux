@@ -219,7 +219,7 @@ class StreamingWindow {
             ordered: false,
         });
 
-        this.conn.ontrack = event => {
+        this.conn.addEventListener("track", event => {
             const media = document.createElement(event.track.kind);
             media.setAttribute("webkit-playsinline", "");
             media.setAttribute("playsinline", "");
@@ -244,7 +244,7 @@ class StreamingWindow {
                 this.canvas.style.height = "100%";
 
                 if (!this.clientSideMouse) {
-                    this.video.onclick = event => {
+                    this.video.addEventListener("click", event => {
                         if (this.video.requestPointerLock) {
                             this.video.requestPointerLock({
                                 unadjustedMovement: true,
@@ -252,7 +252,7 @@ class StreamingWindow {
                                 this.video.requestPointerLock();
                             });
                         }
-                    };
+                    }, { signal: this.abortController.signal });
                 } else {
                     document.addEventListener("contextmenu", event => event.preventDefault(), { signal: this.abortController.signal });
                     if (this.simulateTouchpad) {
@@ -266,9 +266,9 @@ class StreamingWindow {
                     this.canvas.height = window.innerHeight * window.devicePixelRatio;
                     this.drawVirtualMouse();
                 }, { signal: this.abortController.signal });
-                this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this));
-                this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this));
-                this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this));
+                this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this), { signal: this.abortController.signal });
+                this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this), { signal: this.abortController.signal });
+                this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this), { signal: this.abortController.signal });
                 document.addEventListener("wheel", this.handleWheel.bind(this), {
                     passive: false,
                     signal: this.abortController.signal,
@@ -283,15 +283,19 @@ class StreamingWindow {
                 });
                 this.canvas.addEventListener("touchstart", this.handleTouchStart.bind(this), {
                     passive: false,
+                    signal: this.abortController.signal,
                 });
                 this.canvas.addEventListener("touchend", this.handleTouchEnd.bind(this), {
                     passive: false,
+                    signal: this.abortController.signal,
                 });
                 this.canvas.addEventListener("touchcancel", this.handleTouchEnd.bind(this), {
                     passive: false,
+                    signal: this.abortController.signal,
                 });
                 this.canvas.addEventListener("touchmove", this.handleTouchMove.bind(this), {
                     passive: false,
+                    signal: this.abortController.signal,
                 });
 
                 this.inner.innerText = "";
@@ -304,9 +308,9 @@ class StreamingWindow {
                 this.inner.appendChild(this.video);
                 this.inner.appendChild(this.canvas);
             }
-        };
+        }, { signal: this.abortController.signal });
 
-        this.conn.onicecandidate = async event => {
+        this.conn.addEventListener("icecandidate", async event => {
             if (!event.candidate) {
                 const resp = await fetch(`https://${address}/offer`, {
                     method: "POST",
@@ -365,7 +369,7 @@ class StreamingWindow {
                     window.location.reload();
                 }
             }
-        };
+        }, { signal: this.abortController.signal });
 
         // Offer to receive 1 video track
         this.conn.addTransceiver("video", { direction: "recvonly" });
