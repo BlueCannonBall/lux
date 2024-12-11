@@ -153,6 +153,8 @@ class StreamingWindow {
         this.simulateTouchpad = simulateTouchpad;
         this.naturalTouchScrolling = naturalTouchScrolling;
 
+        this.abortController = new AbortController();
+
         this.virtualMouseX = window.innerWidth / 2;
         this.virtualMouseY = window.innerHeight / 2;
 
@@ -192,14 +194,20 @@ class StreamingWindow {
             ],
         });
 
-        this.conn.oniceconnectionstatechange = event => {
+        this.conn.addEventListener("iceconnectionstatechange", event => {
             if (this.conn.iceConnectionState === "closed" ||
                 this.conn.iceConnectionState === "failed" ||
                 this.conn.iceConnectionState === "disconnected") {
-                alert(`The ICE connection state has changed to ${this.conn.iceConnectionState}.`);
-                window.location.reload();
+                this.abortController.abort();
+                const streamingWindow = new StreamingWindow(
+                    this.clientSideMouse,
+                    this.simulateTouchpad,
+                    this.naturalTouchScrolling,
+                );
+                streamingWindow.startStreaming(address, password);
+                this.inner.replaceWith(streamingWindow.inner);
             }
-        };
+        }, { signal: this.abortController.signal });
 
         this.orderedChannel = this.conn.createDataChannel("ordered-input", {
             ordered: true,
@@ -207,10 +215,6 @@ class StreamingWindow {
         this.unorderedChannel = this.conn.createDataChannel("unordered-input", {
             ordered: false,
         });
-        this.orderedChannel.onclose = this.unorderedChannel.onclose = () => {
-            alert("An input data channel has closed.");
-            window.location.reload();
-        };
 
         this.conn.ontrack = event => {
             const media = document.createElement(event.track.kind);
@@ -247,11 +251,11 @@ class StreamingWindow {
                         }
                     };
                 } else {
-                    document.addEventListener("contextmenu", event => event.preventDefault());
+                    document.addEventListener("contextmenu", event => event.preventDefault(), { signal: this.abortController.signal });
                     if (this.simulateTouchpad) {
                         this.mouseImage = new Image();
                         this.mouseImage.src = "mouse.png";
-                        requestAnimationFrame(this.drawVirtualMouse.bind(this));
+                        this.mouseImage.onload = this.drawVirtualMouse.bind(this);
                     }
                 }
                 window.addEventListener("resize", event => {
@@ -263,12 +267,15 @@ class StreamingWindow {
                 this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this));
                 document.addEventListener("wheel", this.handleWheel.bind(this), {
                     passive: false,
+                    signal: this.abortController.signal,
                 });
                 document.addEventListener("keydown", this.handleKeyDown.bind(this), {
                     passive: false,
+                    signal: this.abortController.signal,
                 });
                 document.addEventListener("keyup", this.handleKeyUp.bind(this), {
                     passive: false,
+                    signal: this.abortController.signal,
                 });
                 this.canvas.addEventListener("touchstart", this.handleTouchStart.bind(this), {
                     passive: false,
@@ -366,24 +373,22 @@ class StreamingWindow {
     moveVirtualMouse(x, y) {
         this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), window.innerWidth);
         this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), window.innerHeight);
+        if (this.mouseImage.complete) this.drawVirtualMouse();
     }
 
     drawVirtualMouse() {
-        if (this.mouseImage.complete) {
-            this.ctx.clearRect(0, 0, this.canvas.width * window.devicePixelRatio, this.canvas.height * window.devicePixelRatio);
-            this.ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
-            this.ctx.shadowBlur = 7;
-            this.ctx.shadowOffsetX = 1 * window.devicePixelRatio;
-            this.ctx.shadowOffsetY = 1 * window.devicePixelRatio;
-            this.ctx.drawImage(
-                this.mouseImage,
-                this.virtualMouseX * window.devicePixelRatio,
-                this.virtualMouseY * window.devicePixelRatio,
-                this.mouseImage.width / 40 * window.devicePixelRatio,
-                this.mouseImage.height / 40 * window.devicePixelRatio,
-            );
-        }
-        requestAnimationFrame(this.drawVirtualMouse.bind(this));
+        this.ctx.clearRect(0, 0, this.canvas.width * window.devicePixelRatio, this.canvas.height * window.devicePixelRatio);
+        this.ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+        this.ctx.shadowBlur = 7;
+        this.ctx.shadowOffsetX = 1 * window.devicePixelRatio;
+        this.ctx.shadowOffsetY = 1 * window.devicePixelRatio;
+        this.ctx.drawImage(
+            this.mouseImage,
+            this.virtualMouseX * window.devicePixelRatio,
+            this.virtualMouseY * window.devicePixelRatio,
+            this.mouseImage.width / 40 * window.devicePixelRatio,
+            this.mouseImage.height / 40 * window.devicePixelRatio,
+        );
     }
 
     pushTouch(touch) {
