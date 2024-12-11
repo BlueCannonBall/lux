@@ -400,13 +400,13 @@ class StreamingWindow {
 
     sendOrdered(message) {
         if (this.orderedChannel.readyState === "open") {
-            this.orderedChannel.send(JSON.stringify(object));
+            this.orderedChannel.send(JSON.stringify(message));
         }
     }
 
     sendUnordered(message) {
         if (this.unorderedChannel.readyState === "open") {
-            this.unorderedChannel.send(JSON.stringify(object));
+            this.unorderedChannel.send(JSON.stringify(message));
         }
     }
 
