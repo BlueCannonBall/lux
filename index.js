@@ -60,7 +60,7 @@ class Checkbox {
 
         this.checkbox = document.createElement("input");
         this.checkbox.type = "checkbox";
-        this.checkbox.checked = checked;
+        this.checked = checked;
         this.inner.appendChild(this.checkbox);
 
         this.label = document.createTextNode(label);
@@ -69,6 +69,37 @@ class Checkbox {
 
     get checked() {
         return this.checkbox.checked;
+    }
+
+    set checked(value) {
+        return this.checkbox.checked = value;
+    }
+}
+
+class Range {
+    constructor(label, min, max, value, step) {
+        this.inner = document.createElement("label");
+        this.inner.style.marginBottom = "var(--pico-spacing)";
+
+        this.label = document.createTextNode(label);
+        this.inner.appendChild(this.label);
+
+        this.range = document.createElement("input");
+        this.range.type = "range";
+        this.range.min = min;
+        this.range.max = max;
+        this.value = value;
+        this.range.step = step;
+        this.range.style.marginBottom = '0';
+        this.inner.appendChild(this.range);
+    }
+
+    get value() {
+        return this.range.value;
+    }
+
+    set value(value) {
+        return this.range.value = value;
     }
 }
 
@@ -100,6 +131,9 @@ class SetupForm {
         this.naturalTouchScrollingCheckbox = new Checkbox("Natural touch scrolling");
         this.inner.appendChild(this.naturalTouchScrollingCheckbox.inner);
 
+        this.mouseSensitivityRange = new Range("Mouse sensitivity:", 0, 3, 1.5, 0.1);
+        this.inner.appendChild(this.mouseSensitivityRange.inner);
+
         this.submitButton = document.createElement("button");
         this.submitButton.type = "submit";
         this.submitButton.innerText = "Login";
@@ -123,6 +157,7 @@ class SetupForm {
         // Load credentials
         this.addressInput.value = localStorage.getItem("address");
         this.passwordInput.value = localStorage.getItem("password");
+        this.mouseSensitivityRange.value = localStorage.getItem("sensitivity");
     }
 
     handleSubmit(event) {
@@ -136,6 +171,7 @@ class SetupForm {
             this.clientSideMouseCheckbox.checked,
             this.simulateTouchpadCheckbox.checked,
             this.naturalTouchScrollingCheckbox.checked,
+            this.mouseSensitivityRange.value,
         );
         streamingWindow.startStreaming(
             this.addressInput.value,
@@ -151,6 +187,7 @@ class StreamingWindow {
         clientSideMouse = false,
         simulateTouchpad = false,
         naturalTouchScrolling = false,
+        mouseSensitivity = 1.5,
         virtualMouseX = window.innerWidth / 2,
         virtualMouseY = window.innerHeight / 2,
     ) {
@@ -159,6 +196,7 @@ class StreamingWindow {
         this.clientSideMouse = clientSideMouse;
         this.simulateTouchpad = simulateTouchpad;
         this.naturalTouchScrolling = naturalTouchScrolling;
+        this.mouseSensitivity = mouseSensitivity;
 
         this.abortController = new AbortController();
 
@@ -212,6 +250,7 @@ class StreamingWindow {
                     this.clientSideMouse,
                     this.simulateTouchpad,
                     this.naturalTouchScrolling,
+                    this.mouseSensitivity,
                     this.virtualMouseX,
                     this.virtualMouseY,
                 );
@@ -802,8 +841,8 @@ class StreamingWindow {
                     } else {
                         if (this.clientSideMouse) {
                             this.moveVirtualMouse(
-                                (updatedTouches[0].clientX - this.touches[0].clientX) * 1.5,
-                                (updatedTouches[0].clientY - this.touches[0].clientY) * 1.5,
+                                (updatedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity,
+                                (updatedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity,
                             );
                             const message = {
                                 type: "mousemoveabs",
@@ -813,8 +852,8 @@ class StreamingWindow {
                         } else {
                             const message = {
                                 type: "mousemove",
-                                x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * 1.5),
-                                y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * 1.5),
+                                x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity),
+                                y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity),
                             };
                             this.sendUnordered(message);
                         }
@@ -842,8 +881,8 @@ class StreamingWindow {
                 case 3: {
                     if (this.clientSideMouse) {
                         this.moveVirtualMouse(
-                            (updatedTouches[0].clientX - this.touches[0].clientX) * 1.5,
-                            (updatedTouches[0].clientY - this.touches[0].clientY) * 1.5,
+                            (updatedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity,
+                            (updatedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity,
                         );
                         const message = {
                             type: "mousemoveabs",
@@ -853,8 +892,8 @@ class StreamingWindow {
                     } else {
                         const message = {
                             type: "mousemove",
-                            x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * 1.5),
-                            y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * 1.5),
+                            x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity),
+                            y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity),
                         };
                         this.sendUnordered(message);
                     }
