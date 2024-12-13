@@ -166,6 +166,7 @@ class SetupForm {
         // Save credentials
         localStorage.setItem("address", this.addressInput.value);
         localStorage.setItem("password", this.passwordInput.value);
+        localStorage.setItem("sensitivity", this.mouseSensitivityRange.value);
 
         const streamingWindow = new StreamingWindow(
             this.clientSideMouseCheckbox.checked,
