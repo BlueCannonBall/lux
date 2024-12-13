@@ -309,10 +309,12 @@ class StreamingWindow {
                         this.mouseImage.onload = this.drawVirtualMouse.bind(this);
                     }
                 }
-                window.addEventListener("resize", event => {
+                window.addEventListener("resize", () => {
                     this.canvas.width = window.innerWidth * window.devicePixelRatio;
                     this.canvas.height = window.innerHeight * window.devicePixelRatio;
                     if (this.clientSideMouse && this.simulateTouchpad && this.mouseImage.complete) {
+                        this.virtualMouseX = Math.min(Math.max(this.virtualMouseX, 0), window.innerWidth);
+                        this.virtualMouseY = Math.min(Math.max(this.virtualMouseY, 0), window.innerHeight);
                         this.drawVirtualMouse();
                     }
                 }, { signal: this.abortController.signal });
