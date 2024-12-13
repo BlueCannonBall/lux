@@ -131,7 +131,7 @@ class SetupForm {
         this.naturalTouchScrollingCheckbox = new Checkbox("Natural touch scrolling");
         this.inner.appendChild(this.naturalTouchScrollingCheckbox.inner);
 
-        this.mouseSensitivityRange = new Range("Mouse sensitivity:", 0, 3, 1.5, 0.1);
+        this.mouseSensitivityRange = new Range("Mouse sensitivity:", 0.1, 2.9, 1.5, 0.1);
         this.inner.appendChild(this.mouseSensitivityRange.inner);
 
         this.submitButton = document.createElement("button");
