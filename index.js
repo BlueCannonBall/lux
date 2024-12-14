@@ -286,6 +286,7 @@ class StreamingWindow {
 
                 this.video.style.flex = "1";
                 this.video.style.minWidth = "0";
+                this.video.style.userSelect = "none";
 
                 this.canvas = document.createElement("canvas");
                 this.ctx = this.canvas.getContext("2d");
@@ -296,6 +297,7 @@ class StreamingWindow {
                 this.canvas.style.left = '0';
                 this.canvas.style.width = "100%";
                 this.canvas.style.height = "100%";
+                this.canvas.style.userSelect = "none";
 
                 if (!this.clientSideMouse) {
                     this.canvas.addEventListener("click", event => {
