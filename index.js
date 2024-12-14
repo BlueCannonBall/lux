@@ -300,7 +300,7 @@ class StreamingWindow {
                 this.canvas.style.userSelect = "none";
 
                 if (!this.clientSideMouse) {
-                    this.canvas.addEventListener("click", async event => {
+                    this.canvas.addEventListener("click", () => {
                         if (this.canvas.requestPointerLock) {
                             try {
                                 this.canvas.requestPointerLock({
