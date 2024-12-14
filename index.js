@@ -157,6 +157,9 @@ class SetupForm {
         // Load credentials
         this.addressInput.value = localStorage.getItem("address");
         this.passwordInput.value = localStorage.getItem("password");
+        this.clientSideMouseCheckbox.checked = localStorage.getItem("client_side_mouse") === "true";
+        this.simulateTouchpadCheckbox.checked = localStorage.getItem("simulate_touchpad") === "true";
+        this.naturalTouchScrollingCheckbox.checked = localStorage.getItem("natural_touch_scrolling") === "true";
         this.mouseSensitivityRange.value = localStorage.getItem("sensitivity");
     }
 
@@ -166,6 +169,9 @@ class SetupForm {
         // Save credentials
         localStorage.setItem("address", this.addressInput.value);
         localStorage.setItem("password", this.passwordInput.value);
+        localStorage.setItem("client_side_mouse", this.clientSideMouseCheckbox.checked.toString());
+        localStorage.setItem("simulate_touchpad", this.simulateTouchpadCheckbox.checked.toString());
+        localStorage.setItem("natural_touch_scrolling", this.naturalTouchScrollingCheckbox.checked.toString());
         localStorage.setItem("sensitivity", this.mouseSensitivityRange.value);
 
         const streamingWindow = new StreamingWindow(
@@ -444,8 +450,8 @@ class StreamingWindow {
         this.ctx.shadowOffsetY = 1.5 * window.devicePixelRatio;
         this.ctx.drawImage(
             this.mouseImage,
-            this.virtualMouseX * window.devicePixelRatio,
-            this.virtualMouseY * window.devicePixelRatio,
+            Math.round(this.virtualMouseX * window.devicePixelRatio),
+            Math.round(this.virtualMouseY * window.devicePixelRatio),
             this.mouseImage.width / 40 * window.devicePixelRatio,
             this.mouseImage.height / 40 * window.devicePixelRatio,
         );
