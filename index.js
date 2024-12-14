@@ -298,12 +298,12 @@ class StreamingWindow {
                 this.canvas.style.height = "100%";
 
                 if (!this.clientSideMouse) {
-                    this.video.addEventListener("click", event => {
-                        if (this.video.requestPointerLock) {
-                            this.video.requestPointerLock({
+                    this.canvas.addEventListener("click", event => {
+                        if (this.canvas.requestPointerLock) {
+                            this.canvas.requestPointerLock({
                                 unadjustedMovement: true,
                             }).catch(() => {
-                                this.video.requestPointerLock();
+                                this.canvas.requestPointerLock();
                             });
                         }
                     }, { signal: this.abortController.signal });
