@@ -300,14 +300,14 @@ class StreamingWindow {
                 this.canvas.style.userSelect = "none";
 
                 if (!this.clientSideMouse) {
-                    this.canvas.addEventListener("click", () => {
+                    this.canvas.addEventListener("click", async () => {
                         if (this.canvas.requestPointerLock) {
                             try {
-                                this.canvas.requestPointerLock({
+                                await this.canvas.requestPointerLock({
                                     unadjustedMovement: true,
                                 });
                             } catch (e) {
-                                this.canvas.requestPointerLock();
+                                await this.canvas.requestPointerLock();
                             }
                         }
                     }, { signal: this.abortController.signal });
