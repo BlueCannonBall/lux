@@ -108,6 +108,7 @@ class SetupForm {
         this.inner = document.createElement("form");
 
         this.titleHeading = document.createElement("h1");
+        this.titleHeading.style.marginTop = "var(--pico-typography-spacing-vertical)";
         this.titleHeading.innerHTML = `<img src="icon.png" style="margin-right: 5px; display: inline-block; width: 60px; vertical-align: -15px;"> Lux Client`;
         this.inner.appendChild(this.titleHeading);
 
@@ -131,6 +132,9 @@ class SetupForm {
         this.naturalTouchScrollingCheckbox = new Checkbox("Natural touch scrolling");
         this.inner.appendChild(this.naturalTouchScrollingCheckbox.inner);
 
+        this.viewOnlyCheckbox = new Checkbox("View only");
+        this.inner.appendChild(this.viewOnlyCheckbox.inner);
+
         this.mouseSensitivityRange = new Range("Mouse sensitivity:", 0.1, 2.9, 1.5, 0.1);
         this.inner.appendChild(this.mouseSensitivityRange.inner);
 
@@ -146,6 +150,7 @@ class SetupForm {
         this.inner.style.boxSizing = "border-box";
         this.inner.style.width = "100%";
         this.inner.style.height = "100%";
+        this.inner.style.minHeight = "fit-content";
 
         this.inner.style.paddingLeft = "15%";
         this.inner.style.paddingRight = "15%";
@@ -154,30 +159,31 @@ class SetupForm {
         this.inner.style.flexDirection = "column";
         this.inner.style.justifyContent = "center";
 
-        // Load credentials
         this.addressInput.value = localStorage.getItem("address");
         this.passwordInput.value = localStorage.getItem("password");
         this.clientSideMouseCheckbox.checked = localStorage.getItem("client_side_mouse") === "true";
         this.simulateTouchpadCheckbox.checked = localStorage.getItem("simulate_touchpad") === "true";
         this.naturalTouchScrollingCheckbox.checked = localStorage.getItem("natural_touch_scrolling") === "true";
+        this.viewOnlyCheckbox.checked = localStorage.getItem("view_only") === "true";
         this.mouseSensitivityRange.value = localStorage.getItem("sensitivity");
     }
 
     handleSubmit(event) {
         event.preventDefault();
 
-        // Save credentials
         localStorage.setItem("address", this.addressInput.value);
         localStorage.setItem("password", this.passwordInput.value);
         localStorage.setItem("client_side_mouse", this.clientSideMouseCheckbox.checked.toString());
         localStorage.setItem("simulate_touchpad", this.simulateTouchpadCheckbox.checked.toString());
         localStorage.setItem("natural_touch_scrolling", this.naturalTouchScrollingCheckbox.checked.toString());
+        localStorage.setItem("view_only", this.viewOnlyCheckbox.checked.toString());
         localStorage.setItem("sensitivity", this.mouseSensitivityRange.value);
 
         const streamingWindow = new StreamingWindow(
             this.clientSideMouseCheckbox.checked,
             this.simulateTouchpadCheckbox.checked,
             this.naturalTouchScrollingCheckbox.checked,
+            this.viewOnlyCheckbox.checked,
             this.mouseSensitivityRange.value,
         );
         streamingWindow.startStreaming(
@@ -194,6 +200,7 @@ class StreamingWindow {
         clientSideMouse = false,
         simulateTouchpad = false,
         naturalTouchScrolling = false,
+        viewOnly = false,
         mouseSensitivity = 1.5,
         virtualMouseX = window.innerWidth / 2,
         virtualMouseY = window.innerHeight / 2,
@@ -203,6 +210,7 @@ class StreamingWindow {
         this.clientSideMouse = clientSideMouse;
         this.simulateTouchpad = simulateTouchpad;
         this.naturalTouchScrolling = naturalTouchScrolling;
+        this.viewOnly = viewOnly;
         this.mouseSensitivity = mouseSensitivity;
 
         this.abortController = new AbortController();
@@ -257,6 +265,7 @@ class StreamingWindow {
                     this.clientSideMouse,
                     this.simulateTouchpad,
                     this.naturalTouchScrolling,
+                    this.viewOnly,
                     this.mouseSensitivity,
                     this.virtualMouseX,
                     this.virtualMouseY,
@@ -299,26 +308,6 @@ class StreamingWindow {
                 this.canvas.style.height = "100%";
                 this.canvas.style.userSelect = "none";
 
-                if (!this.clientSideMouse) {
-                    this.canvas.addEventListener("click", async () => {
-                        if (this.canvas.requestPointerLock) {
-                            try {
-                                await this.canvas.requestPointerLock({
-                                    unadjustedMovement: true,
-                                });
-                            } catch (e) {
-                                await this.canvas.requestPointerLock();
-                            }
-                        }
-                    }, { signal: this.abortController.signal });
-                } else {
-                    document.addEventListener("contextmenu", event => event.preventDefault(), { signal: this.abortController.signal });
-                    if (this.simulateTouchpad) {
-                        this.mouseImage = new Image();
-                        this.mouseImage.src = "mouse.png";
-                        this.mouseImage.onload = this.drawVirtualMouse.bind(this);
-                    }
-                }
                 window.addEventListener("resize", () => {
                     this.canvas.width = window.innerWidth * window.devicePixelRatio;
                     this.canvas.height = window.innerHeight * window.devicePixelRatio;
@@ -328,37 +317,60 @@ class StreamingWindow {
                         this.drawVirtualMouse();
                     }
                 }, { signal: this.abortController.signal });
-                this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this), { signal: this.abortController.signal });
-                this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this), { signal: this.abortController.signal });
-                this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this), { signal: this.abortController.signal });
-                document.addEventListener("wheel", this.handleWheel.bind(this), {
-                    passive: false,
-                    signal: this.abortController.signal,
-                });
-                document.addEventListener("keydown", this.handleKeyDown.bind(this), {
-                    passive: false,
-                    signal: this.abortController.signal,
-                });
-                document.addEventListener("keyup", this.handleKeyUp.bind(this), {
-                    passive: false,
-                    signal: this.abortController.signal,
-                });
-                this.canvas.addEventListener("touchstart", this.handleTouchStart.bind(this), {
-                    passive: false,
-                    signal: this.abortController.signal,
-                });
-                this.canvas.addEventListener("touchend", this.handleTouchEnd.bind(this), {
-                    passive: false,
-                    signal: this.abortController.signal,
-                });
-                this.canvas.addEventListener("touchcancel", this.handleTouchEnd.bind(this), {
-                    passive: false,
-                    signal: this.abortController.signal,
-                });
-                this.canvas.addEventListener("touchmove", this.handleTouchMove.bind(this), {
-                    passive: false,
-                    signal: this.abortController.signal,
-                });
+
+                if (!this.viewOnly) {
+                    if (!this.clientSideMouse) {
+                        this.canvas.addEventListener("click", async () => {
+                            if (this.canvas.requestPointerLock) {
+                                try {
+                                    await this.canvas.requestPointerLock({
+                                        unadjustedMovement: true,
+                                    });
+                                } catch (e) {
+                                    await this.canvas.requestPointerLock();
+                                }
+                            }
+                        }, { signal: this.abortController.signal });
+                    } else {
+                        document.addEventListener("contextmenu", event => event.preventDefault(), { signal: this.abortController.signal });
+                        if (this.simulateTouchpad) {
+                            this.mouseImage = new Image();
+                            this.mouseImage.src = "mouse.png";
+                            this.mouseImage.onload = this.drawVirtualMouse.bind(this);
+                        }
+                    }
+                    this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this), { signal: this.abortController.signal });
+                    this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this), { signal: this.abortController.signal });
+                    this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this), { signal: this.abortController.signal });
+                    document.addEventListener("wheel", this.handleWheel.bind(this), {
+                        passive: false,
+                        signal: this.abortController.signal,
+                    });
+                    document.addEventListener("keydown", this.handleKeyDown.bind(this), {
+                        passive: false,
+                        signal: this.abortController.signal,
+                    });
+                    document.addEventListener("keyup", this.handleKeyUp.bind(this), {
+                        passive: false,
+                        signal: this.abortController.signal,
+                    });
+                    this.canvas.addEventListener("touchstart", this.handleTouchStart.bind(this), {
+                        passive: false,
+                        signal: this.abortController.signal,
+                    });
+                    this.canvas.addEventListener("touchend", this.handleTouchEnd.bind(this), {
+                        passive: false,
+                        signal: this.abortController.signal,
+                    });
+                    this.canvas.addEventListener("touchcancel", this.handleTouchEnd.bind(this), {
+                        passive: false,
+                        signal: this.abortController.signal,
+                    });
+                    this.canvas.addEventListener("touchmove", this.handleTouchMove.bind(this), {
+                        passive: false,
+                        signal: this.abortController.signal,
+                    });
+                }
 
                 this.inner.innerText = "";
                 this.inner.ariaBusy = false;
