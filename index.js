@@ -275,12 +275,14 @@ class StreamingWindow {
             }
         }, { signal: this.abortController.signal });
 
-        this.orderedChannel = this.conn.createDataChannel("ordered-input", {
-            ordered: true,
-        });
-        this.unorderedChannel = this.conn.createDataChannel("unordered-input", {
-            ordered: false,
-        });
+        if (!this.viewOnly) {
+            this.orderedChannel = this.conn.createDataChannel("ordered-input", {
+                ordered: true,
+            });
+            this.unorderedChannel = this.conn.createDataChannel("unordered-input", {
+                ordered: false,
+            });
+        }
 
         this.conn.addEventListener("track", event => {
             const media = document.createElement(event.track.kind);
