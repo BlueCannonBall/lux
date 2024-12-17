@@ -218,9 +218,6 @@ class StreamingWindow {
         this.virtualMouseX = virtualMouseX
         this.virtualMouseY = virtualMouseY;
 
-        this.wheelX = 0;
-        this.wheelY = 0;
-
         this.touches = [];
         this.lastRightClickTime = 0;
 
@@ -535,34 +532,21 @@ class StreamingWindow {
     handleWheel(event) {
         event.preventDefault();
 
-        this.wheelX += event.deltaX;
-        this.wheelY += event.deltaY;
-
+        let message;
         if (isSafari()) {
-            if (Math.abs(this.wheelX) >= 120 / 3 || Math.abs(this.wheelY) >= 120 / 3) {
-                const message = {
-                    type: "wheel",
-                    x: Math.round(this.wheelX * 3),
-                    y: Math.round(this.wheelY * 3),
-                };
-                this.sendUnordered(message);
-
-                this.wheelX = 0;
-                this.wheelY = 0;
-            }
+            message = {
+                type: "wheel",
+                x: event.deltaX * 3,
+                y: event.deltaY * 3,
+            };
         } else {
-            if (Math.abs(this.wheelX) >= 120 || Math.abs(this.wheelY) >= 120) {
-                const message = {
-                    type: "wheel",
-                    x: Math.round(this.wheelX),
-                    y: Math.round(this.wheelY),
-                };
-                this.sendUnordered(message);
-
-                this.wheelX = 0;
-                this.wheelY = 0;
-            }
+            message = {
+                type: "wheel",
+                x: event.deltaX,
+                y: event.deltaY,
+            };
         }
+        this.sendUnordered(message);
     }
 
     handleKeyDown(event) {
@@ -890,15 +874,10 @@ class StreamingWindow {
 
                 case 2: {
                     if (this.touches.every(touch => Date.now() - touch.startTime >= 25)) {
-                        if (Math.abs(updatedTouches[0].clientX - this.touches[0].clientX) < 15 &&
-                            Math.abs(updatedTouches[0].clientY - this.touches[0].clientY) < 15) {
-                            return;
-                        }
-
                         const message = {
                             type: "wheel",
-                            x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * (this.naturalTouchScrolling ? -1 : 1) * 8),
-                            y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * (this.naturalTouchScrolling ? -1 : 1) * 8),
+                            x: Math.round(updatedTouches[0].clientX - this.touches[0].clientX) * (this.naturalTouchScrolling ? -1 : 1) * 8,
+                            y: Math.round(updatedTouches[0].clientY - this.touches[0].clientY) * (this.naturalTouchScrolling ? -1 : 1) * 8,
                         };
                         this.sendUnordered(message);
                     }
