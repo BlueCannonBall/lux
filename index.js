@@ -536,14 +536,14 @@ class StreamingWindow {
         if (isSafari()) {
             message = {
                 type: "wheel",
-                x: event.deltaX * 3,
-                y: event.deltaY * 3,
+                x: Math.round(event.deltaX) * 3,
+                y: Math.round(event.deltaY) * 3,
             };
         } else {
             message = {
                 type: "wheel",
-                x: event.deltaX,
-                y: event.deltaY,
+                x: Math.round(event.deltaX),
+                y: Math.round(event.deltaY),
             };
         }
         this.sendUnordered(message);
