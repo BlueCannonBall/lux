@@ -4,6 +4,8 @@ window.onerror = (message, source, lineno, colno, error) => {
     return false;
 }
 
+const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -41,12 +43,8 @@ function touchListAsArray(touchList) {
     return ret;
 }
 
-function isSafari() {
-    return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-}
-
 function isTouchForceful(touch) {
-    if (isSafari()) {
+    if (isSafari) {
         return touch.force > 0;
     } else {
         return touch.force > 1;
@@ -532,20 +530,11 @@ class StreamingWindow {
     handleWheel(event) {
         event.preventDefault();
 
-        let message;
-        if (isSafari()) {
-            message = {
-                type: "wheel",
-                x: Math.round(event.deltaX) * 3,
-                y: Math.round(event.deltaY) * 3,
-            };
-        } else {
-            message = {
-                type: "wheel",
-                x: Math.round(event.deltaX),
-                y: Math.round(event.deltaY),
-            };
-        }
+        const message = {
+            type: "wheel",
+            x: Math.round(event.deltaX),
+            y: Math.round(event.deltaY),
+        };
         this.sendUnordered(message);
     }
 
