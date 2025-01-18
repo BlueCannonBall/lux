@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json" />
+    <title>Window Size Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Window Size Display</h1>
+    <p id="sizeDisplay">Width: -- px, Height: -- px</p>
+
+    <script>
+        function updateWindowSize() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            document.getElementById('sizeDisplay').textContent = `Width: ${width} px, Height: ${height} px`;
+        }
+
+        window.addEventListener('resize', updateWindowSize);
+        window.addEventListener('load', updateWindowSize);
+    </script>
+</body>
+</html>
