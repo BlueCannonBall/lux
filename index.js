@@ -141,6 +141,8 @@ class SetupForm {
         this.submitButton.innerText = "Login";
         this.inner.appendChild(this.submitButton);
 
+        this.inner.innerHTML += `<p>Display size: ${window.innerWidth}x${window.innerHeight}</p>`;
+
         this.inner.addEventListener("submit", this.handleSubmit.bind(this), {
             passive: false,
         });
