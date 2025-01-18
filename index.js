@@ -283,6 +283,12 @@ class StreamingWindow {
             const media = document.createElement(event.track.kind);
             media.setAttribute("webkit-playsinline", "");
             media.setAttribute("playsinline", "");
+            if  (media.tagName === "AUDIO") {
+                media.srcObject = event.streams[0];
+                media.autoplay = true;
+                media.controls = false;
+                this.inner.appendChild(media);
+            }
             if (media.tagName === "VIDEO") { // Ignore audio tracks, for now
                 this.video = media;
                 this.video.srcObject = event.streams[0];
@@ -444,7 +450,8 @@ class StreamingWindow {
 
         // Offer to receive 1 video track
         this.conn.addTransceiver("video", { direction: "recvonly" });
-        this.conn.createOffer().then(offer => {
+        this.conn.addTransceiver("audio", { direction: "recvonly" });
+	this.conn.createOffer().then(offer => {
             this.conn.setLocalDescription(offer);
         });
     }
