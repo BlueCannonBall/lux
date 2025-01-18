@@ -141,7 +141,9 @@ class SetupForm {
         this.submitButton.innerText = "Login";
         this.inner.appendChild(this.submitButton);
 
-        this.inner.innerHTML += `<p>Display size: ${window.innerWidth}x${window.innerHeight}</p>`;
+        this.windowSizeLabel = document.createElement("p");
+        this.windowSizeLabel.innerText = `${window.innerWidth}x${window.innerHeight}`;
+        this.inner.appendChild(this.windowSizeLabel);
 
         this.inner.addEventListener("submit", this.handleSubmit.bind(this), {
             passive: false,
@@ -285,7 +287,7 @@ class StreamingWindow {
             const media = document.createElement(event.track.kind);
             media.setAttribute("webkit-playsinline", "");
             media.setAttribute("playsinline", "");
-            if  (media.tagName === "AUDIO") {
+            if (media.tagName === "AUDIO") {
                 media.srcObject = event.streams[0];
                 media.autoplay = true;
                 media.controls = false;
@@ -453,7 +455,7 @@ class StreamingWindow {
         // Offer to receive 1 video track
         this.conn.addTransceiver("video", { direction: "recvonly" });
         this.conn.addTransceiver("audio", { direction: "recvonly" });
-	this.conn.createOffer().then(offer => {
+        this.conn.createOffer().then(offer => {
             this.conn.setLocalDescription(offer);
         });
     }
