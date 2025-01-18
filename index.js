@@ -287,17 +287,16 @@ class StreamingWindow {
             const media = document.createElement(event.track.kind);
             if (event.track.kind === "audio") {
                 this.audio = media;
-                this.audio.srcObject = event.streams[0];
                 this.audio.controls = false;
                 this.audio.autoplay = true;
+                this.audio.srcObject = event.streams[0];
                 this.inner.appendChild(this.audio);
             } else if (event.track.kind === "video") {
                 this.video = media;
-                this.video.setAttribute("playsinline", "");
-                this.video.setAttribute("webkit-playsinline", "");
-                this.video.srcObject = event.streams[0];
                 this.video.controls = false;
+                this.video.playsInline = true;
                 this.video.autoplay = true;
+                this.video.srcObject = event.streams[0];
 
                 this.video.style.flex = "1";
                 this.video.style.minWidth = "0";
