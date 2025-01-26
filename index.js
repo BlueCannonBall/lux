@@ -432,10 +432,26 @@ class StreamingWindow {
                             return modifiedLines.join('\n');
                         }
 
+                        function addStereoToSDP(sdp) {
+                            // Regular expression to match `a=fmtp` lines with the specified format
+                            const fmtpRegex = /(a=fmtp:(\d+) minptime=\d+;useinbandfec=\d+)(.*)/g;
+
+                            // Replace matches by appending `;stereo=1` if not already present
+                            const updatedSDP = sdp.replace(fmtpRegex, (match, base, number, rest) => {
+                                if (!rest.includes(';stereo=1')) {
+                                    return `${base};stereo=1${rest}`;
+                                }
+                                return match; // No modification if `stereo=1` is already present
+                            });
+
+                            return updatedSDP;
+                        }
+
                         let sessionDescription = JSON.parse(atob(JSON.parse(answer).Offer));
                         console.log(sessionDescription.sdp);
                         sessionDescription.sdp = modifyCandidates(sessionDescription.sdp);
                         console.log(sessionDescription.sdp);
+                        sessionDescription.sdp = addStereoToSDP(sessionDescription.sdp);
                         this.conn.setRemoteDescription(new RTCSessionDescription(sessionDescription));
                     } catch (e) {
                         alert(`Error: ${e}`);
