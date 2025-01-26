@@ -472,7 +472,7 @@ class StreamingWindow {
         this.conn.createOffer().then(offer => {
             let desc = {
                 type: offer.type,
-                sdp: addStereoToSDP(this.conn.localDescription.sdp),
+                sdp: addStereoToSDP(offer.sdp),
             };
             this.conn.setLocalDescription(new RTCSessionDescription(desc));
         });
