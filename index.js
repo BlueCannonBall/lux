@@ -6,6 +6,21 @@ window.onerror = (message, source, lineno, colno, error) => {
 
 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
+function addStereoToSDP(sdp) {
+    // Regular expression to match `a=fmtp` lines with the specified format
+    const fmtpRegex = /(a=fmtp:(\d+) minptime=\d+;useinbandfec=\d+)(.*)/g;
+
+    // Replace matches by appending `;stereo=1` if not already present
+    const updatedSDP = sdp.replace(fmtpRegex, (match, base, number, rest) => {
+        if (!rest.includes(';stereo=1')) {
+            return `${base};stereo=1${rest}`;
+        }
+        return match; // No modification if `stereo=1` is already present
+    });
+
+    return updatedSDP;
+}
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -391,6 +406,10 @@ class StreamingWindow {
 
         this.conn.addEventListener("icecandidate", async event => {
             if (!event.candidate) {
+                let desc = {
+                    type: this.conn.localDescription.type,
+                    sdp: addStereoToSDP(this.conn.localDescription.sdp),
+                };
                 const resp = await fetch(`https://${address}/offer`, {
                     method: "POST",
                     headers: {
@@ -399,7 +418,7 @@ class StreamingWindow {
                     body: JSON.stringify({
                         password,
                         show_mouse: !this.clientSideMouse,
-                        offer: btoa(JSON.stringify(this.conn.localDescription)),
+                        offer: btoa(JSON.stringify(desc)),
                     }),
                 }).catch(e => {
                     alert(`Error: ${e}`);
@@ -432,21 +451,6 @@ class StreamingWindow {
 
                             // Join the modified lines back into an SDP string
                             return modifiedLines.join('\n');
-                        }
-
-                        function addStereoToSDP(sdp) {
-                            // Regular expression to match `a=fmtp` lines with the specified format
-                            const fmtpRegex = /(a=fmtp:(\d+) minptime=\d+;useinbandfec=\d+)(.*)/g;
-
-                            // Replace matches by appending `;stereo=1` if not already present
-                            const updatedSDP = sdp.replace(fmtpRegex, (match, base, number, rest) => {
-                                if (!rest.includes(';stereo=1')) {
-                                    return `${base};stereo=1${rest}`;
-                                }
-                                return match; // No modification if `stereo=1` is already present
-                            });
-
-                            return updatedSDP;
                         }
 
                         let sessionDescription = JSON.parse(atob(JSON.parse(answer).Offer));
