@@ -141,6 +141,10 @@ class SetupForm {
         this.submitButton.innerText = "Login";
         this.inner.appendChild(this.submitButton);
 
+        this.windowSizeLabel = document.createElement("p");
+        this.windowSizeLabel.innerText = `${window.innerWidth}x${window.innerHeight}`;
+        this.inner.appendChild(this.windowSizeLabel);
+
         this.inner.addEventListener("submit", this.handleSubmit.bind(this), {
             passive: false,
         });
@@ -281,20 +285,18 @@ class StreamingWindow {
 
         this.conn.addEventListener("track", event => {
             const media = document.createElement(event.track.kind);
-            media.setAttribute("webkit-playsinline", "");
-            media.setAttribute("playsinline", "");
-            if  (media.tagName === "AUDIO") {
-                media.srcObject = event.streams[0];
-                media.autoplay = true;
-                media.controls = false;
-                this.inner.appendChild(media);
-            }
-            if (media.tagName === "VIDEO") { // Ignore audio tracks, for now
+            if (event.track.kind === "audio") {
+                this.audio = media;
+                this.audio.controls = false;
+                this.audio.autoplay = true;
+                this.audio.srcObject = event.streams[0];
+                this.inner.appendChild(this.audio);
+            } else if (event.track.kind === "video") {
                 this.video = media;
-                this.video.srcObject = event.streams[0];
-
-                this.video.autoplay = true;
                 this.video.controls = false;
+                this.video.playsInline = true;
+                this.video.autoplay = true;
+                this.video.srcObject = event.streams[0];
 
                 this.video.style.flex = "1";
                 this.video.style.minWidth = "0";
@@ -467,7 +469,7 @@ class StreamingWindow {
         // Offer to receive 1 video track
         this.conn.addTransceiver("video", { direction: "recvonly" });
         this.conn.addTransceiver("audio", { direction: "recvonly" });
-	this.conn.createOffer().then(offer => {
+        this.conn.createOffer().then(offer => {
             this.conn.setLocalDescription(offer);
         });
     }
