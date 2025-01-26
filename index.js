@@ -406,10 +406,6 @@ class StreamingWindow {
 
         this.conn.addEventListener("icecandidate", async event => {
             if (!event.candidate) {
-                let desc = {
-                    type: this.conn.localDescription.type,
-                    sdp: addStereoToSDP(this.conn.localDescription.sdp),
-                };
                 const resp = await fetch(`https://${address}/offer`, {
                     method: "POST",
                     headers: {
@@ -418,7 +414,7 @@ class StreamingWindow {
                     body: JSON.stringify({
                         password,
                         show_mouse: !this.clientSideMouse,
-                        offer: btoa(JSON.stringify(desc)),
+                        offer: btoa(JSON.stringify(this.conn.localDescription)),
                     }),
                 }).catch(e => {
                     alert(`Error: ${e}`);
@@ -474,7 +470,11 @@ class StreamingWindow {
         this.conn.addTransceiver("video", { direction: "recvonly" });
         this.conn.addTransceiver("audio", { direction: "recvonly" });
         this.conn.createOffer().then(offer => {
-            this.conn.setLocalDescription(offer);
+            let desc = {
+                type: offer.type,
+                sdp: addStereoToSDP(this.conn.localDescription.sdp),
+            };
+            this.conn.setLocalDescription(new RTCSessionDescription(desc));
         });
     }
 
