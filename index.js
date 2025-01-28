@@ -38,17 +38,15 @@ function positionInVideo(x, y, video) {
 function touchListAsArray(touchList) {
     const ret = [];
     for (const touch of touchList) {
-        ret.push(touch);
+        if (isSafari) {
+            if (touch.force === 0) {
+                ret.push(touch);
+            }
+        } else if (touch.force <= 1) {
+            ret.push(touch);
+        }
     }
     return ret;
-}
-
-function isTouchForceful(touch) {
-    if (isSafari) {
-        return touch.force > 0;
-    } else {
-        return touch.force > 1;
-    }
 }
 
 class Checkbox {
@@ -375,6 +373,19 @@ class StreamingWindow {
                         passive: false,
                         signal: this.abortController.signal,
                     });
+                    this.canvas.addEventListener("pointerdown", this.handlePen.bind(this), {
+                        passive: false,
+                        signal: this.abortController.signal,
+                    });
+                    this.canvas.addEventListener("pointerup", this.handlePenUp.bind(this), {
+                        signal: this.abortController.signal,
+                    });
+                    this.canvas.addEventListener("pointercancel", this.handlePenUp.bind(this), {
+                        signal: this.abortController.signal,
+                    });
+                    this.canvas.addEventListener("pointermove", this.handlePen.bind(this), {
+                        signal: this.abortController.signal,
+                    });
                 }
 
                 this.inner.innerText = "";
@@ -491,6 +502,29 @@ class StreamingWindow {
         });
     }
 
+    clearTouches() {
+        if (this.simulateTouchpad) {
+            const message = {
+                type: "mouseup",
+            };
+            message.button = 0;
+            this.sendOrdered(message);
+            message.button = 2;
+            this.sendOrdered(message);
+            this.touches = [];
+        } else {
+            for (const touch of this.touches) {
+                const message = {
+                    type: "touchend",
+                    id: Math.abs(touch.identifier) % 10,
+                };
+                this.sendOrdered(message);
+            }
+            this.touches = [];
+        }
+    }
+
+
     sendOrdered(message) {
         if (this.orderedChannel.readyState === "open") {
             this.orderedChannel.send(JSON.stringify(message));
@@ -572,75 +606,6 @@ class StreamingWindow {
         const newTouches = touchListAsArray(event.changedTouches);
 
         if (this.simulateTouchpad) {
-            switch (this.touches.length) {
-                case 0: {
-                    let penTouch;
-                    if ((penTouch = newTouches.findIndex(touch => isTouchForceful(touch))) !== -1) {
-                        this.touches = [];
-                        this.pushTouch(newTouches[penTouch]);
-
-                        // Start drag
-                        let message = {
-                            type: "mousemoveabs",
-                            ...positionInVideo(
-                                this.touches[0].clientX,
-                                this.touches[0].clientY,
-                                this.video,
-                            ),
-                        };
-                        this.sendOrdered(message);
-                        message = {
-                            type: "mousedown",
-                            button: 0,
-                        };
-                        this.sendOrdered(message);
-
-                        return;
-                    }
-                    break;
-                }
-
-                default: {
-                    let penTouch;
-                    if ((penTouch = newTouches.findIndex(touch => isTouchForceful(touch))) !== -1) {
-                        if (this.touches.some(touch => isTouchForceful(touch))) {
-                            break;
-                        }
-
-                        // Clear existing touches
-                        let message = {
-                            type: "mouseup",
-                        };
-                        message.button = 0;
-                        this.sendOrdered(message);
-                        message.button = 2;
-                        this.sendOrdered(message);
-
-                        this.touches = [];
-                        this.pushTouch(newTouches[penTouch]);
-
-                        // Start drag
-                        message = {
-                            type: "mousemoveabs",
-                            ...positionInVideo(
-                                this.touches[0].clientX,
-                                this.touches[0].clientY,
-                                this.video,
-                            ),
-                        };
-                        this.sendOrdered(message);
-                        message = {
-                            type: "mousedown",
-                            button: 0,
-                        };
-                        this.sendOrdered(message);
-
-                        return;
-                    }
-                    break;
-                }
-            }
-
             for (const touch of newTouches) {
                 if (touch.radiusX <= 75 && touch.radiusY <= 75) {
                     this.pushTouch(touch);
@@ -667,45 +632,15 @@ class StreamingWindow {
                 }
             }
         } else {
-            let penTouch;
-            if ((penTouch = newTouches.findIndex(touch => isTouchForceful(touch))) !== -1) {
-                // Clear existing touches
-                for (const touch of this.touches) {
+            for (const touch of newTouches) {
+                if (touch.radiusX <= 75 && touch.radiusY <= 75) {
                     const message = {
-                        type: "touchend",
+                        type: "touchstart",
                         id: Math.abs(touch.identifier) % 10,
+                        ...positionInVideo(touch.clientX, touch.clientY, this.video),
                     };
                     this.sendOrdered(message);
-                }
-                this.touches = [];
-                this.pushTouch(newTouches[penTouch]);
-
-                // Start drag
-                let message = {
-                    type: "mousemoveabs",
-                    ...positionInVideo(
-                        this.touches[0].clientX,
-                        this.touches[0].clientY,
-                        this.video,
-                    ),
-                };
-                this.sendOrdered(message);
-                message = {
-                    type: "mousedown",
-                    button: 0,
-                };
-                this.sendOrdered(message);
-            } else {
-                for (const touch of newTouches) {
-                    if (touch.radiusX <= 75 && touch.radiusY <= 75) {
-                        const message = {
-                            type: "touchstart",
-                            id: Math.abs(touch.identifier) % 10,
-                            ...positionInVideo(touch.clientX, touch.clientY, this.video),
-                        };
-                        this.sendOrdered(message);
-                        this.pushTouch(touch);
-                    }
+                    this.pushTouch(touch);
                 }
             }
         }
@@ -718,14 +653,7 @@ class StreamingWindow {
         if (this.simulateTouchpad) {
             switch (this.touches.length) {
                 case 1: {
-                    if (isTouchForceful(this.touches[0])) {
-                        // End drag
-                        const message = {
-                            type: "mouseup",
-                            button: 0,
-                        };
-                        this.sendOrdered(message);
-                    } else if (Date.now() - this.lastRightClickTime > 125 &&
+                    if (Date.now() - this.lastRightClickTime > 125 &&
                         Date.now() - this.touches[0].startTime <= 125) {
                         if (this.clientSideMouse) {
                             const message = {
@@ -800,20 +728,11 @@ class StreamingWindow {
             for (const deletedTouch of deletedTouches) {
                 let touch;
                 if (touch = this.touches.find(touch => touch.identifier === deletedTouch.identifier)) {
-                    if (isTouchForceful(touch)) {
-                        // End drag
-                        const message = {
-                            type: "mouseup",
-                            button: 0,
-                        };
-                        this.sendOrdered(message);
-                    } else {
-                        const message = {
-                            type: "touchend",
-                            id: Math.abs(touch.identifier) % 10,
-                        };
-                        this.sendOrdered(message);
-                    }
+                    const message = {
+                        type: "touchend",
+                        id: Math.abs(touch.identifier) % 10,
+                    };
+                    this.sendOrdered(message);
                 }
             }
         }
@@ -837,35 +756,23 @@ class StreamingWindow {
 
             switch (this.touches.length) {
                 case 1: {
-                    if (isTouchForceful(this.touches[0])) {
+                    if (this.clientSideMouse) {
+                        this.moveVirtualMouse(
+                            (updatedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity,
+                            (updatedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity,
+                        );
                         const message = {
                             type: "mousemoveabs",
-                            ...positionInVideo(
-                                updatedTouches[0].clientX,
-                                updatedTouches[0].clientY,
-                                this.video,
-                            ),
+                            ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
                         };
                         this.sendOrdered(message);
                     } else {
-                        if (this.clientSideMouse) {
-                            this.moveVirtualMouse(
-                                (updatedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity,
-                                (updatedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity,
-                            );
-                            const message = {
-                                type: "mousemoveabs",
-                                ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
-                            };
-                            this.sendOrdered(message);
-                        } else {
-                            const message = {
-                                type: "mousemove",
-                                x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity),
-                                y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity),
-                            };
-                            this.sendUnordered(message);
-                        }
+                        const message = {
+                            type: "mousemove",
+                            x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity),
+                            y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity),
+                        };
+                        this.sendUnordered(message);
                     }
                     break;
                 }
@@ -908,20 +815,12 @@ class StreamingWindow {
             for (const movedTouch of movedTouches) {
                 let touch;
                 if (touch = this.touches.find(touch => touch.identifier === movedTouch.identifier)) {
-                    if (isTouchForceful(touch)) {
-                        const message = {
-                            type: "mousemoveabs",
-                            ...positionInVideo(touch.clientX, touch.clientY, this.video),
-                        };
-                        this.sendOrdered(message);
-                    } else {
-                        const message = {
-                            type: "touchmove",
-                            id: Math.abs(touch.identifier) % 10,
-                            ...positionInVideo(touch.clientX, touch.clientY, this.video),
-                        };
-                        this.sendOrdered(message);
-                    }
+                    const message = {
+                        type: "touchmove",
+                        id: Math.abs(touch.identifier) % 10,
+                        ...positionInVideo(touch.clientX, touch.clientY, this.video),
+                    };
+                    this.sendOrdered(message);
                 }
             }
         }
@@ -933,6 +832,36 @@ class StreamingWindow {
                     touch.clientY = movedTouch.clientY;
                 }
             }
+        }
+    }
+
+    handlePen(event) {
+        if (event.pointerType === "pen") {
+            this.clearTouches();
+
+            const message = {
+                type: "pen",
+                ...positionInVideo(event.clientX, event.clientY, this.video),
+                pressure: event.pressure,
+                tiltX: Math.round(event.tiltX),
+                tiltY: Math.round(event.tiltY),
+            };
+            this.sendOrdered(message);
+        }
+    }
+
+    handlePenUp(event) {
+        if (event.pointerType === "pen") {
+            this.clearTouches();
+
+            const message = {
+                type: "pen",
+                ...positionInVideo(event.clientX, event.clientY, this.video),
+                pressure: 0,
+                tiltX: Math.round(event.tiltX),
+                tiltY: Math.round(event.tiltY),
+            };
+            this.sendOrdered(message);
         }
     }
 }
