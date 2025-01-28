@@ -6,6 +6,21 @@ window.onerror = (message, source, lineno, colno, error) => {
 
 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
+function addStereoToSDP(sdp) {
+    // Regular expression to match `a=fmtp` lines with the specified format
+    const fmtpRegex = /(a=fmtp:(\d+) minptime=\d+;useinbandfec=\d+)(.*)/g;
+
+    // Replace matches by appending `;stereo=1` if not already present
+    const updatedSDP = sdp.replace(fmtpRegex, (match, base, number, rest) => {
+        if (!rest.includes(';stereo=1')) {
+            return `${base};stereo=1${rest}`;
+        }
+        return match; // No modification if `stereo=1` is already present
+    });
+
+    return updatedSDP;
+}
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -449,6 +464,7 @@ class StreamingWindow {
                         console.log(sessionDescription.sdp);
                         sessionDescription.sdp = modifyCandidates(sessionDescription.sdp);
                         console.log(sessionDescription.sdp);
+                        sessionDescription.sdp = addStereoToSDP(sessionDescription.sdp);
                         this.conn.setRemoteDescription(new RTCSessionDescription(sessionDescription));
                     } catch (e) {
                         alert(`Error: ${e}`);
@@ -465,7 +481,11 @@ class StreamingWindow {
         this.conn.addTransceiver("video", { direction: "recvonly" });
         this.conn.addTransceiver("audio", { direction: "recvonly" });
         this.conn.createOffer().then(offer => {
-            this.conn.setLocalDescription(offer);
+            let desc = {
+                type: offer.type,
+                sdp: addStereoToSDP(offer.sdp),
+            };
+            this.conn.setLocalDescription(new RTCSessionDescription(desc));
         });
     }
 
