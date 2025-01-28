@@ -862,7 +862,7 @@ class StreamingWindow {
             const message = {
                 type: "pen",
                 ...positionInVideo(event.clientX, event.clientY, this.video),
-                pressure: event.pressure,
+                pressure: Math.max(event.pressure, 0.001),
                 tiltX: Math.round(event.tiltX),
                 tiltY: Math.round(event.tiltY),
             };
