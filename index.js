@@ -4,8 +4,6 @@ window.onerror = (message, source, lineno, colno, error) => {
     return false;
 }
 
-const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
