@@ -6,6 +6,14 @@ window.onerror = (message, source, lineno, colno, error) => {
 
 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function distance(x1, y1, x2, y2) {
+    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+}
+
 function addStereoToSDP(sdp) {
     // Regular expression to match `a=fmtp` lines with the specified format
     const fmtpRegex = /(a=fmtp:(\d+) minptime=\d+;useinbandfec=\d+)(.*)/g;
@@ -19,14 +27,6 @@ function addStereoToSDP(sdp) {
     });
 
     return updatedSDP;
-}
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function distance(x1, y1, x2, y2) {
-    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }
 
 function positionInVideo(x, y, video) {
@@ -53,11 +53,7 @@ function positionInVideo(x, y, video) {
 function touchListAsArray(touchList) {
     const ret = [];
     for (const touch of touchList) {
-        if (isSafari) {
-            if (touch.force === 0) {
-                ret.push(touch);
-            }
-        } else if (touch.force <= 1) {
+        if (touch.force) {
             ret.push(touch);
         }
     }
@@ -389,7 +385,6 @@ class StreamingWindow {
                         signal: this.abortController.signal,
                     });
                     this.canvas.addEventListener("pointerdown", this.handlePen.bind(this), {
-                        passive: false,
                         signal: this.abortController.signal,
                     });
                     this.canvas.addEventListener("pointerup", this.handlePenUp.bind(this), {
@@ -872,8 +867,6 @@ class StreamingWindow {
 
     handlePenUp(event) {
         if (event.pointerType === "pen") {
-            this.clearTouches();
-
             const message = {
                 type: "pen",
                 ...positionInVideo(event.clientX, event.clientY, this.video),
