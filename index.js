@@ -48,16 +48,6 @@ function positionInVideo(x, y, video) {
     }
 }
 
-function touchListAsArray(touchList) {
-    const ret = [];
-    for (const touch of touchList) {
-        if (touch.force) {
-            ret.push(touch);
-        }
-    }
-    return ret;
-}
-
 class Checkbox {
     constructor(label, checked = false) {
         this.inner = document.createElement("label");
@@ -366,32 +356,28 @@ class StreamingWindow {
                         passive: false,
                         signal: this.abortController.signal,
                     });
-                    this.canvas.addEventListener("touchstart", this.handleTouchStart.bind(this), {
+                    this.canvas.addEventListener("touchstart", event => event.preventDefault(), {
                         passive: false,
                         signal: this.abortController.signal,
                     });
-                    this.canvas.addEventListener("touchend", this.handleTouchEnd.bind(this), {
+                    this.canvas.addEventListener("touchend", event => event.preventDefault(), {
                         passive: false,
                         signal: this.abortController.signal,
                     });
-                    this.canvas.addEventListener("touchcancel", this.handleTouchEnd.bind(this), {
+                    this.canvas.addEventListener("touchmove", event => event.preventDefault(), {
                         passive: false,
                         signal: this.abortController.signal,
                     });
-                    this.canvas.addEventListener("touchmove", this.handleTouchMove.bind(this), {
-                        passive: false,
+                    this.canvas.addEventListener("pointerdown", this.handlePointerDown.bind(this), {
                         signal: this.abortController.signal,
                     });
-                    this.canvas.addEventListener("pointerdown", this.handlePen.bind(this), {
+                    this.canvas.addEventListener("pointerup", this.handlePointerUp.bind(this), {
                         signal: this.abortController.signal,
                     });
-                    this.canvas.addEventListener("pointerup", this.handlePenUp.bind(this), {
+                    this.canvas.addEventListener("pointercancel", this.handlePointerUp.bind(this), {
                         signal: this.abortController.signal,
                     });
-                    this.canvas.addEventListener("pointercancel", this.handlePenUp.bind(this), {
-                        signal: this.abortController.signal,
-                    });
-                    this.canvas.addEventListener("pointermove", this.handlePen.bind(this), {
+                    this.canvas.addEventListener("pointermove", this.handlePointerMove.bind(this), {
                         signal: this.abortController.signal,
                     });
                 }
@@ -433,9 +419,7 @@ class StreamingWindow {
                             const lines = sdp.split('\n');
                             const modifiedLines = lines.map(line => {
                                 // Match srflx candidates with udp
-                                const match = line.match(
-                                    /candidate:(\S+) 1 udp (\d+) (\d+\.\d+\.\d+\.\d+) (\d+) typ srflx(?: ufrag \S+)?/i
-                                );
+                                const match = line.match(/candidate:(\S+) 1 udp (\d+) (\d+\.\d+\.\d+\.\d+) (\d+) typ srflx(?: ufrag \S+)?/i);
                                 if (match) {
                                     const [
                                         ,
@@ -505,12 +489,11 @@ class StreamingWindow {
 
     pushTouch(touch) {
         this.touches.push({
-            identifier: touch.identifier,
+            id: touch.id,
             clientX: touch.clientX,
             clientY: touch.clientY,
             initialClientX: touch.clientX,
             initialClientY: touch.clientY,
-            force: touch.force,
             startTime: Date.now(),
         });
     }
@@ -529,7 +512,7 @@ class StreamingWindow {
             for (const touch of this.touches) {
                 const message = {
                     type: "touchend",
-                    id: Math.abs(touch.identifier) % 10,
+                    id: Math.abs(touch.id) % 10,
                 };
                 this.sendOrdered(message);
             }
@@ -614,10 +597,7 @@ class StreamingWindow {
         this.sendOrdered(message);
     }
 
-    handleTouchStart(event) {
-        event.preventDefault();
-        const newTouches = touchListAsArray(event.changedTouches);
-
+    handleTouchStart(newTouches) {
         if (this.simulateTouchpad) {
             for (const touch of newTouches) {
                 if (touch.radiusX <= 75 && touch.radiusY <= 75) {
@@ -649,7 +629,7 @@ class StreamingWindow {
                 if (touch.radiusX <= 75 && touch.radiusY <= 75) {
                     const message = {
                         type: "touchstart",
-                        id: Math.abs(touch.identifier) % 10,
+                        id: Math.abs(touch.id) % 10,
                         ...positionInVideo(touch.clientX, touch.clientY, this.video),
                     };
                     this.sendOrdered(message);
@@ -659,9 +639,8 @@ class StreamingWindow {
         }
     }
 
-    async handleTouchEnd(event) {
-        event.preventDefault();
-        const deletedTouches = touchListAsArray(event.changedTouches);
+    async handleTouchEnd(deletedTouches) {
+        deletedTouches = deletedTouches.filter(deletedTouch => this.touches.some(touch => touch.id === deletedTouch.id));
 
         if (this.simulateTouchpad) {
             switch (this.touches.length) {
@@ -740,39 +719,29 @@ class StreamingWindow {
         } else {
             for (const deletedTouch of deletedTouches) {
                 let touch;
-                if (touch = this.touches.find(touch => touch.identifier === deletedTouch.identifier)) {
+                if (touch = this.touches.find(touch => touch.id === deletedTouch.id)) {
                     const message = {
                         type: "touchend",
-                        id: Math.abs(touch.identifier) % 10,
+                        id: Math.abs(touch.id) % 10,
                     };
                     this.sendOrdered(message);
                 }
             }
         }
 
-        this.touches = this.touches.filter(touch => {
-            for (const deletedTouch of deletedTouches) {
-                if (touch.identifier === deletedTouch.identifier) {
-                    return false;
-                }
-            }
-            return true;
-        });
+        this.touches = this.touches.filter(touch => !deletedTouches.some(deletedTouch => deletedTouch.id === touch.id));
     }
 
-    handleTouchMove(event) {
-        event.preventDefault();
-        const movedTouches = touchListAsArray(event.changedTouches);
+    handleTouchMove(movedTouches) {
+        movedTouches = movedTouches.filter(movedTouch => this.touches.some(touch => touch.id === movedTouch.id));
 
         if (this.simulateTouchpad) {
-            const updatedTouches = touchListAsArray(event.touches);
-
             switch (this.touches.length) {
                 case 1: {
                     if (this.clientSideMouse) {
                         this.moveVirtualMouse(
-                            (updatedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity,
-                            (updatedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity,
+                            (movedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity,
+                            (movedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity,
                         );
                         const message = {
                             type: "mousemoveabs",
@@ -782,8 +751,8 @@ class StreamingWindow {
                     } else {
                         const message = {
                             type: "mousemove",
-                            x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity),
-                            y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity),
+                            x: Math.round((movedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity),
+                            y: Math.round((movedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity),
                         };
                         this.sendUnordered(message);
                     }
@@ -791,11 +760,12 @@ class StreamingWindow {
                 }
 
                 case 2: {
-                    if (this.touches.every(touch => Date.now() - touch.startTime >= 25)) {
+                    if (movedTouches[0].id === this.touches[0].id &&
+                        this.touches.every(touch => Date.now() - touch.startTime >= 25)) {
                         const message = {
                             type: "wheel",
-                            x: Math.round(updatedTouches[0].clientX - this.touches[0].clientX) * (this.naturalTouchScrolling ? -1 : 1) * 8,
-                            y: Math.round(updatedTouches[0].clientY - this.touches[0].clientY) * (this.naturalTouchScrolling ? -1 : 1) * 8,
+                            x: Math.round(movedTouches[0].clientX - this.touches[0].clientX) * (this.naturalTouchScrolling ? -1 : 1) * 8,
+                            y: Math.round(movedTouches[0].clientY - this.touches[0].clientY) * (this.naturalTouchScrolling ? -1 : 1) * 8,
                         };
                         this.sendUnordered(message);
                     }
@@ -803,23 +773,25 @@ class StreamingWindow {
                 }
 
                 case 3: {
-                    if (this.clientSideMouse) {
-                        this.moveVirtualMouse(
-                            (updatedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity,
-                            (updatedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity,
-                        );
-                        const message = {
-                            type: "mousemoveabs",
-                            ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
-                        };
-                        this.sendOrdered(message);
-                    } else {
-                        const message = {
-                            type: "mousemove",
-                            x: Math.round((updatedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity),
-                            y: Math.round((updatedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity),
-                        };
-                        this.sendUnordered(message);
+                    if (movedTouches[0].id === this.touches[0].id) {
+                        if (this.clientSideMouse) {
+                            this.moveVirtualMouse(
+                                (movedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity,
+                                (movedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity,
+                            );
+                            const message = {
+                                type: "mousemoveabs",
+                                ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
+                            };
+                            this.sendOrdered(message);
+                        } else {
+                            const message = {
+                                type: "mousemove",
+                                x: Math.round((movedTouches[0].clientX - this.touches[0].clientX) * this.mouseSensitivity),
+                                y: Math.round((movedTouches[0].clientY - this.touches[0].clientY) * this.mouseSensitivity),
+                            };
+                            this.sendUnordered(message);
+                        }
                     }
                     break;
                 }
@@ -827,10 +799,10 @@ class StreamingWindow {
         } else {
             for (const movedTouch of movedTouches) {
                 let touch;
-                if (touch = this.touches.find(touch => touch.identifier === movedTouch.identifier)) {
+                if (touch = this.touches.find(touch => touch.id === movedTouch.id)) {
                     const message = {
                         type: "touchmove",
-                        id: Math.abs(touch.identifier) % 10,
+                        id: Math.abs(touch.id) % 10,
                         ...positionInVideo(touch.clientX, touch.clientY, this.video),
                     };
                     this.sendOrdered(message);
@@ -840,7 +812,7 @@ class StreamingWindow {
 
         for (const touch of this.touches) {
             for (const movedTouch of movedTouches) {
-                if (touch.identifier === movedTouch.identifier) {
+                if (touch.id === movedTouch.id) {
                     touch.clientX = movedTouch.clientX;
                     touch.clientY = movedTouch.clientY;
                 }
@@ -848,8 +820,16 @@ class StreamingWindow {
         }
     }
 
-    handlePen(event) {
-        if (event.pointerType === "pen") {
+    handlePointerDown(event) {
+        if (event.pointerType === "touch") {
+            this.handleTouchStart([{
+                id: event.pointerId,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                radiusX: event.width / 2,
+                radiusY: event.height / 2,
+            }]);
+        } else if (event.pointerType === "pen") {
             this.clearTouches();
 
             const message = {
@@ -863,12 +843,43 @@ class StreamingWindow {
         }
     }
 
-    handlePenUp(event) {
-        if (event.pointerType === "pen") {
+    handlePointerUp(event) {
+        if (event.pointerType === "touch") {
+            this.handleTouchEnd([{
+                id: event.pointerId,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                radiusX: event.width / 2,
+                radiusY: event.height / 2,
+            }]);
+        } else if (event.pointerType === "pen") {
             const message = {
                 type: "pen",
                 ...positionInVideo(event.clientX, event.clientY, this.video),
                 pressure: 0,
+                tiltX: Math.round(event.tiltX),
+                tiltY: Math.round(event.tiltY),
+            };
+            this.sendOrdered(message);
+        }
+    }
+
+    handlePointerMove(event) {
+        if (event.pointerType === "touch") {
+            this.handleTouchMove([{
+                id: event.pointerId,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                radiusX: event.width / 2,
+                radiusY: event.height / 2,
+            }]);
+        } else if (event.pointerType === "pen") {
+            this.clearTouches();
+
+            const message = {
+                type: "pen",
+                ...positionInVideo(event.clientX, event.clientY, this.video),
+                pressure: Math.max(event.pressure, 0.001),
                 tiltX: Math.round(event.tiltX),
                 tiltY: Math.round(event.tiltY),
             };
