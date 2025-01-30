@@ -641,6 +641,7 @@ class StreamingWindow {
 
     async handleTouchEnd(deletedTouches) {
         deletedTouches = deletedTouches.filter(deletedTouch => this.touches.some(touch => touch.id === deletedTouch.id));
+        if (!deletedTouches) return;
 
         if (this.simulateTouchpad) {
             switch (this.touches.length) {
@@ -734,6 +735,7 @@ class StreamingWindow {
 
     handleTouchMove(movedTouches) {
         movedTouches = movedTouches.filter(movedTouch => this.touches.some(touch => touch.id === movedTouch.id));
+        if (!movedTouches) return;
 
         if (this.simulateTouchpad) {
             switch (this.touches.length) {
