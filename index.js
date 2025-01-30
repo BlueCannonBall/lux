@@ -735,7 +735,7 @@ class StreamingWindow {
 
     handleTouchMove(movedTouches) {
         movedTouches = movedTouches.filter(movedTouch => this.touches.some(touch => touch.id === movedTouch.id));
-        if (!movedTouches) return;
+        if (movedTouches.length === 0) return;
 
         if (this.simulateTouchpad) {
             switch (this.touches.length) {
