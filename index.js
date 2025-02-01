@@ -403,7 +403,7 @@ class StreamingWindow {
                     },
                     body: JSON.stringify({
                         password,
-                        show_mouse: !this.clientSideMouse,
+                        show_mouse: !this.clientSideMouse || this.viewOnly,
                         offer: btoa(JSON.stringify(this.conn.localDescription)),
                     }),
                 }).catch(e => {
