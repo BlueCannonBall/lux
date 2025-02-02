@@ -12,18 +12,31 @@ function distance(x1, y1, x2, y2) {
     return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }
 
-function addStereoToSDP(sdp) {
-    // Regular expression to match `a=fmtp` lines with the specified format
-    const fmtpRegex = /(a=fmtp:(\d+) minptime=\d+;useinbandfec=\d+)(.*)/g;
+function modifyCandidates(sdp) {
+    const lines = sdp.split('\n');
+    const modifiedLines = lines.map(line => {
+        const match = line.match(/candidate:(\S+) 1 udp (\d+) (\d+\.\d+\.\d+\.\d+) (\d+) typ srflx(?: ufrag \S+)?/i);
+        if (match) {
+            const [
+                ,
+                foundation, priority, ip, port
+            ] = match;
+            return `a=candidate:${foundation} 1 UDP ${priority} ${ip} ${port} typ srflx raddr 0.0.0.0 rport 0`;
+        }
+        return line;
+    });
+    return modifiedLines.join('\n');
+}
 
-    // Replace matches by appending `;stereo=1` if not already present
+function addStereoToSDP(sdp) {
+    const fmtpRegex = /(a=fmtp:(\d+) minptime=\d+;useinbandfec=\d+)(.*)/g;
     const updatedSDP = sdp.replace(fmtpRegex, (match, base, number, rest) => {
         if (!rest.includes(';stereo=1')) {
             return `${base};stereo=1${rest}`;
+        } else {
+            return match;
         }
-        return match; // No modification if `stereo=1` is already present
     });
-
     return updatedSDP;
 }
 
@@ -414,33 +427,8 @@ class StreamingWindow {
                 if (resp.status === 200) {
                     const answer = await resp.text();
                     try {
-                        function modifyCandidates(sdp) {
-                            // Split the SDP into lines
-                            const lines = sdp.split('\n');
-                            const modifiedLines = lines.map(line => {
-                                // Match srflx candidates with udp
-                                const match = line.match(/candidate:(\S+) 1 udp (\d+) (\d+\.\d+\.\d+\.\d+) (\d+) typ srflx(?: ufrag \S+)?/i);
-                                if (match) {
-                                    const [
-                                        ,
-                                        foundation, priority, ip, port
-                                    ] = match;
-
-                                    // Modify the candidate line
-                                    return `a=candidate:${foundation} 1 UDP ${priority} ${ip} ${port} typ srflx raddr 0.0.0.0 rport 0`;
-                                }
-                                // Return unmodified line if it doesn't match
-                                return line;
-                            });
-
-                            // Join the modified lines back into an SDP string
-                            return modifiedLines.join('\n');
-                        }
-
-                        let sessionDescription = JSON.parse(atob(JSON.parse(answer).Offer));
-                        console.log(sessionDescription.sdp);
+                        const sessionDescription = JSON.parse(atob(JSON.parse(answer).Offer));
                         sessionDescription.sdp = modifyCandidates(sessionDescription.sdp);
-                        console.log(sessionDescription.sdp);
                         sessionDescription.sdp = addStereoToSDP(sessionDescription.sdp);
                         this.conn.setRemoteDescription(new RTCSessionDescription(sessionDescription));
                     } catch (e) {
