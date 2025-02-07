@@ -29,15 +29,7 @@ function modifyCandidates(sdp) {
 }
 
 function addStereoToSDP(sdp) {
-    const fmtpRegex = /(a=fmtp:(\d+) minptime=\d+;useinbandfec=\d+)(.*)/g;
-    const updatedSDP = sdp.replace(fmtpRegex, (match, base, number, rest) => {
-        if (!rest.includes(';stereo=1')) {
-            return `${base};stereo=1${rest}`;
-        } else {
-            return match;
-        }
-    });
-    return updatedSDP;
+    return sdp.replace("useinbandfec=1", "useinbandfec=0;stereo=1");
 }
 
 function positionInVideo(x, y, video) {
