@@ -323,16 +323,6 @@ class StreamingWindow {
                 this.canvas.style.height = "100%";
                 this.canvas.style.userSelect = "none";
 
-                window.addEventListener("resize", () => {
-                    this.canvas.width = window.innerWidth * window.devicePixelRatio;
-                    this.canvas.height = window.innerHeight * window.devicePixelRatio;
-                    if (this.clientSideMouse && this.simulateTouchpad && this.mouseImage.complete) {
-                        this.virtualMouseX = Math.min(Math.max(this.virtualMouseX, 0), window.innerWidth);
-                        this.virtualMouseY = Math.min(Math.max(this.virtualMouseY, 0), window.innerHeight);
-                        this.drawVirtualMouse();
-                    }
-                }, { signal: this.abortController.signal });
-
                 if (!this.viewOnly) {
                     if (!this.clientSideMouse) {
                         this.canvas.addEventListener("click", async () => {
@@ -354,6 +344,15 @@ class StreamingWindow {
                             this.mouseImage.onload = this.drawVirtualMouse.bind(this);
                         }
                     }
+                    window.addEventListener("resize", () => {
+                        this.canvas.width = window.innerWidth * window.devicePixelRatio;
+                        this.canvas.height = window.innerHeight * window.devicePixelRatio;
+                        if (this.clientSideMouse && this.simulateTouchpad && this.mouseImage.complete) {
+                            this.virtualMouseX = Math.min(Math.max(this.virtualMouseX, 0), window.innerWidth);
+                            this.virtualMouseY = Math.min(Math.max(this.virtualMouseY, 0), window.innerHeight);
+                            this.drawVirtualMouse();
+                        }
+                    }, { signal: this.abortController.signal });
                     this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this), { signal: this.abortController.signal });
                     this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this), { signal: this.abortController.signal });
                     this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this), { signal: this.abortController.signal });
