@@ -302,6 +302,7 @@ class StreamingWindow {
 
                 this.video.style.flex = "1";
                 this.video.style.minWidth = "0";
+                this.video.style.webkitUserSelect = "none";
                 this.video.style.userSelect = "none";
 
                 this.canvas = document.createElement("canvas");
@@ -313,6 +314,7 @@ class StreamingWindow {
                 this.canvas.style.left = '0';
                 this.canvas.style.width = "100%";
                 this.canvas.style.height = "100%";
+                this.canvas.style.webkitUserSelect = "none";
                 this.canvas.style.userSelect = "none";
 
                 if (!this.viewOnly) {
