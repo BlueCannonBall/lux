@@ -12,26 +12,6 @@ function distance(x1, y1, x2, y2) {
     return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }
 
-function modifyCandidates(sdp) {
-    const lines = sdp.split('\n');
-    const modifiedLines = lines.map(line => {
-        const match = line.match(/candidate:(\S+) 1 udp (\d+) (\d+\.\d+\.\d+\.\d+) (\d+) typ srflx(?: ufrag \S+)?/i);
-        if (match) {
-            const [
-                ,
-                foundation, priority, ip, port
-            ] = match;
-            return `a=candidate:${foundation} 1 UDP ${priority} ${ip} ${port} typ srflx raddr 0.0.0.0 rport 0`;
-        }
-        return line;
-    });
-    return modifiedLines.join('\n');
-}
-
-function addStereoToSDP(sdp) {
-    return sdp.replace("useinbandfec=1", "useinbandfec=0;stereo=1");
-}
-
 function positionInVideo(x, y, video) {
     const videoAspectRatio = video.videoWidth / video.videoHeight;
     const windowAspectRatio = video.offsetWidth / video.offsetHeight;
@@ -420,10 +400,10 @@ class StreamingWindow {
                 if (resp.status === 200) {
                     const answer = await resp.text();
                     try {
-                        const sessionDescription = JSON.parse(atob(JSON.parse(answer).Offer));
-                        sessionDescription.sdp = modifyCandidates(sessionDescription.sdp);
-                        sessionDescription.sdp = addStereoToSDP(sessionDescription.sdp);
-                        this.conn.setRemoteDescription(new RTCSessionDescription(sessionDescription));
+                        const desc = JSON.parse(atob(JSON.parse(answer).Offer));
+                        console.log("Remote descripton:", desc);
+                        desc.sdp = desc.sdp.replace("useinbandfec=1", "useinbandfec=0;stereo=1");
+                        this.conn.setRemoteDescription(new RTCSessionDescription(desc));
                     } catch (e) {
                         alert(`Error: ${e}`);
                         window.location.reload();
@@ -439,10 +419,11 @@ class StreamingWindow {
         this.conn.addTransceiver("video", { direction: "recvonly" });
         this.conn.addTransceiver("audio", { direction: "recvonly" });
         this.conn.createOffer().then(offer => {
-            let desc = {
+            const desc = {
                 type: offer.type,
-                sdp: addStereoToSDP(offer.sdp),
+                sdp: offer.sdp.replace("useinbandfec=1", "useinbandfec=0;stereo=1"),
             };
+            console.log("Local description:", desc);
             this.conn.setLocalDescription(new RTCSessionDescription(desc));
         });
     }
