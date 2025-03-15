@@ -429,8 +429,8 @@ class StreamingWindow {
     }
 
     moveVirtualMouse(x, y) {
-        this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), window.innerWidth);
-        this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), window.innerHeight);
+        this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), window.innerWidth - 1);
+        this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), window.innerHeight - 1);
         if (this.mouseImage.complete) this.drawVirtualMouse();
     }
 
