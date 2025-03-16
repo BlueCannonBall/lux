@@ -451,22 +451,22 @@ class StreamingWindow {
         let height;
 
         const videoAspectRatio = this.video.videoWidth / this.video.videoHeight;
-        const windowAspectRatio = this.canvas.width / this.canvas.height;
+        const windowAspectRatio = this.canvas.clientWidth / this.canvas.clientHeight;
         if (videoAspectRatio > windowAspectRatio) {
             x = 0;
-            width = this.canvas.width;
-            height = (this.canvas.width / this.video.videoWidth) * this.video.videoHeight;
-            y = (this.canvas.height - height) / 2;
+            width = this.canvas.clientWidth;
+            height = (this.canvas.clientWidth / this.video.videoWidth) * this.video.videoHeight;
+            y = (this.canvas.clientHeight - height) / 2;
         } else if (videoAspectRatio < windowAspectRatio) {
             y = 0;
-            width = (this.canvas.height / this.video.videoHeight) * this.video.videoWidth;
-            height = this.canvas.height;
-            x = (this.canvas.width - width) / 2;
+            width = (this.canvas.clientHeight / this.video.videoHeight) * this.video.videoWidth;
+            height = this.canvas.clientHeight;
+            x = (this.canvas.clientWidth - width) / 2;
         } else {
             x = 0;
             y = 0;
-            width = this.canvas.width;
-            height = this.canvas.height;
+            width = this.canvas.clientWidth;
+            height = this.canvas.clientHeight;
         }
 
         return {
