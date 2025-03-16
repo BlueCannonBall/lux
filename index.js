@@ -84,11 +84,11 @@ class ThemeColorManager {
     }
 
     setThemeColor(r, g, b) {
-        getMeta().setAttribute("content", `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`);
+        this.getMeta().setAttribute("content", `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`);
     }
 
     restoreThemeColor() {
-        getMeta().setAttribute("content", this.mediaQuery.matches ? this.defaultDarkColor : this.defaultLightColor);
+        this.getMeta().setAttribute("content", this.mediaQuery.matches ? this.defaultDarkColor : this.defaultLightColor);
     }
 }
 
