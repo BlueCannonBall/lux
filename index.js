@@ -12,27 +12,6 @@ function distance(x1, y1, x2, y2) {
     return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }
 
-function positionInVideo(x, y, video) {
-    const videoAspectRatio = video.videoWidth / video.videoHeight;
-    const windowAspectRatio = video.offsetWidth / video.offsetHeight;
-    if (videoAspectRatio > windowAspectRatio) {
-        return {
-            x: Math.round(x / (video.offsetWidth / video.videoWidth)),
-            y: Math.round((y - ((1. - windowAspectRatio / videoAspectRatio) * video.offsetHeight) / 2) / (video.offsetWidth / video.videoWidth)),
-        };
-    } else if (videoAspectRatio < windowAspectRatio) {
-        return {
-            x: Math.round((x - ((1. - videoAspectRatio / windowAspectRatio) * video.offsetWidth) / 2) / (video.offsetHeight / video.videoHeight)),
-            y: Math.round(y / (video.offsetHeight / video.videoHeight)),
-        };
-    } else {
-        return {
-            x: Math.round(x / (video.offsetWidth / video.videoWidth)),
-            y: Math.round(y / (video.offsetHeight / video.videoHeight)),
-        };
-    }
-}
-
 class Checkbox {
     constructor(label, checked = false) {
         this.inner = document.createElement("label");
@@ -242,6 +221,14 @@ class StreamingWindow {
                 this.conn.iceConnectionState === "failed" ||
                 this.conn.iceConnectionState === "disconnected") {
                 this.abortController.abort();
+                if (this.video) {
+                    this.video.pause();
+                    this.video.cancelVideoFrameCallback(this.videoFrameCallback);
+                }
+                if (this.audio) {
+                    this.audio.pause();
+                }
+
                 const streamingWindow = new StreamingWindow(
                     this.clientSideMouse,
                     this.simulateTouchpad,
@@ -269,33 +256,19 @@ class StreamingWindow {
             const media = document.createElement(event.track.kind);
             if (event.track.kind === "audio") {
                 this.audio = media;
-                this.audio.controls = false;
-                this.audio.autoplay = true;
                 this.audio.srcObject = event.streams[0];
-                this.inner.appendChild(this.audio);
+                this.audio.play();
             } else if (event.track.kind === "video") {
                 this.video = media;
-                this.video.controls = false;
-                this.video.playsInline = true;
-                this.video.autoplay = true;
                 this.video.srcObject = event.streams[0];
-
-                this.video.style.flex = "1";
-                this.video.style.minWidth = "0";
-                this.video.style.webkitUserSelect = "none";
-                this.video.style.userSelect = "none";
+                this.video.play();
 
                 this.canvas = document.createElement("canvas");
                 this.ctx = this.canvas.getContext("2d");
-                this.canvas.width = window.innerWidth * window.devicePixelRatio;
-                this.canvas.height = window.innerHeight * window.devicePixelRatio;
-                this.canvas.style.position = "absolute";
-                this.canvas.style.top = '0';
-                this.canvas.style.left = '0';
-                this.canvas.style.width = "100%";
-                this.canvas.style.height = "100%";
-                this.canvas.style.webkitUserSelect = "none";
+                this.canvas.style.flex = "1";
+                this.canvas.style.minWidth = "0";
                 this.canvas.style.userSelect = "none";
+                this.canvas.style.webkitUserSelect = "none";
 
                 if (!this.viewOnly) {
                     if (!this.clientSideMouse) {
@@ -315,18 +288,10 @@ class StreamingWindow {
                         if (this.simulateTouchpad) {
                             this.mouseImage = new Image();
                             this.mouseImage.src = "mouse.png";
-                            this.mouseImage.onload = this.drawVirtualMouse.bind(this);
+                            this.mouseImage.onload = this.draw.bind(this);
                         }
                     }
-                    window.addEventListener("resize", () => {
-                        this.canvas.width = window.innerWidth * window.devicePixelRatio;
-                        this.canvas.height = window.innerHeight * window.devicePixelRatio;
-                        if (this.clientSideMouse && this.simulateTouchpad && this.mouseImage.complete) {
-                            this.virtualMouseX = Math.min(Math.max(this.virtualMouseX, 0), window.innerWidth);
-                            this.virtualMouseY = Math.min(Math.max(this.virtualMouseY, 0), window.innerHeight);
-                            this.drawVirtualMouse();
-                        }
-                    }, { signal: this.abortController.signal });
+                    window.addEventListener("resize", this.handleResize.bind(this), { signal: this.abortController.signal });
                     this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this), { signal: this.abortController.signal });
                     this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this), { signal: this.abortController.signal });
                     this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this), { signal: this.abortController.signal });
@@ -367,6 +332,7 @@ class StreamingWindow {
                         signal: this.abortController.signal,
                     });
                 }
+                this.videoFrameCallback = this.video.requestVideoFrameCallback(this.handleVideoFrame.bind(this));
 
                 this.inner.innerText = "";
                 this.inner.ariaBusy = false;
@@ -374,9 +340,8 @@ class StreamingWindow {
                 this.inner.style.removeProperty("align-items");
                 this.inner.style.flex = "1";
                 this.inner.style.minHeight = "0";
-
-                this.inner.appendChild(this.video);
                 this.inner.appendChild(this.canvas);
+                this.handleResize();
             }
         }, { signal: this.abortController.signal });
 
@@ -415,7 +380,7 @@ class StreamingWindow {
             }
         }, { signal: this.abortController.signal });
 
-        // Offer to receive 1 video track
+        // Offer to receive a video track and an audio track
         this.conn.addTransceiver("video", { direction: "recvonly" });
         this.conn.addTransceiver("audio", { direction: "recvonly" });
         this.conn.createOffer().then(offer => {
@@ -428,25 +393,22 @@ class StreamingWindow {
         });
     }
 
-    moveVirtualMouse(x, y) {
-        this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), window.innerWidth - 1);
-        this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), window.innerHeight - 1);
-        if (this.mouseImage.complete) this.drawVirtualMouse();
+    sendOrdered(message) {
+        if (this.orderedChannel.readyState === "open") {
+            this.orderedChannel.send(JSON.stringify(message));
+        }
     }
 
-    drawVirtualMouse() {
-        this.ctx.clearRect(0, 0, this.canvas.width * window.devicePixelRatio, this.canvas.height * window.devicePixelRatio);
-        this.ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
-        this.ctx.shadowBlur = 5;
-        this.ctx.shadowOffsetX = 1.5 * window.devicePixelRatio;
-        this.ctx.shadowOffsetY = 1.5 * window.devicePixelRatio;
-        this.ctx.drawImage(
-            this.mouseImage,
-            Math.round(this.virtualMouseX * window.devicePixelRatio),
-            Math.round(this.virtualMouseY * window.devicePixelRatio),
-            this.mouseImage.width / 40 * window.devicePixelRatio,
-            this.mouseImage.height / 40 * window.devicePixelRatio,
-        );
+    sendUnordered(message) {
+        if (this.unorderedChannel.readyState === "open") {
+            this.unorderedChannel.send(JSON.stringify(message));
+        }
+    }
+
+    moveVirtualMouse(x, y) {
+        this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), this.canvas.clientWidth - 1);
+        this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), this.canvas.clientHeight - 1);
+        this.draw();
     }
 
     pushTouch(touch) {
@@ -482,24 +444,113 @@ class StreamingWindow {
         }
     }
 
+    letterbox() {
+        let x;
+        let y;
+        let width;
+        let height;
 
-    sendOrdered(message) {
-        if (this.orderedChannel.readyState === "open") {
-            this.orderedChannel.send(JSON.stringify(message));
+        const videoAspectRatio = this.video.videoWidth / this.video.videoHeight;
+        const windowAspectRatio = this.canvas.clientWidth / this.canvas.clientHeight;
+        if (videoAspectRatio > windowAspectRatio) {
+            x = 0;
+            width = this.canvas.clientWidth;
+            height = (this.canvas.clientWidth / this.video.videoWidth) * this.video.videoHeight;
+            y = (this.canvas.clientHeight - height) / 2;
+        } else if (videoAspectRatio < windowAspectRatio) {
+            y = 0;
+            width = (this.canvas.clientHeight / this.video.videoHeight) * this.video.videoWidth;
+            height = this.canvas.clientHeight;
+            x = (this.canvas.clientWidth - width) / 2;
+        } else {
+            x = 0;
+            y = 0;
+            width = this.canvas.clientWidth;
+            height = this.canvas.clientHeight;
+        }
+
+        return {
+            x: Math.floor(x),
+            y: Math.floor(y),
+            width: Math.floor(width),
+            height: Math.floor(height),
+        };
+    }
+
+    positionInVideo(x, y) {
+        const videoAspectRatio = this.video.videoWidth / this.video.videoHeight;
+        const windowAspectRatio = this.canvas.clientWidth / this.canvas.clientHeight;
+        if (videoAspectRatio > windowAspectRatio) {
+            return {
+                x: Math.round(x / (this.canvas.clientWidth / this.video.videoWidth)),
+                y: Math.round((y - ((1 - windowAspectRatio / videoAspectRatio) * this.canvas.clientHeight) / 2) / (this.canvas.clientWidth / this.video.videoWidth)),
+            };
+        } else if (videoAspectRatio < windowAspectRatio) {
+            return {
+                x: Math.round((x - ((1 - videoAspectRatio / windowAspectRatio) * this.canvas.clientWidth) / 2) / (this.canvas.clientHeight / this.video.videoHeight)),
+                y: Math.round(y / (this.canvas.clientHeight / this.video.videoHeight)),
+            };
+        } else {
+            return {
+                x: Math.round(x / (this.canvas.clientWidth / this.video.videoWidth)),
+                y: Math.round(y / (this.canvas.clientHeight / this.video.videoHeight)),
+            };
         }
     }
 
-    sendUnordered(message) {
-        if (this.unorderedChannel.readyState === "open") {
-            this.unorderedChannel.send(JSON.stringify(message));
+    draw() {
+        this.ctx.save();
+
+        this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        this.ctx.save();
+        this.ctx.imageSmoothingEnabled = false;
+        {
+            const letterboxed = this.letterbox();
+            this.ctx.drawImage(this.video, letterboxed.x, letterboxed.y, letterboxed.width, letterboxed.height);
         }
+        this.ctx.restore();
+
+        if (this.clientSideMouse && this.simulateTouchpad && this.mouseImage.complete) {
+            this.ctx.save();
+            this.ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+            this.ctx.shadowBlur = 5;
+            this.ctx.shadowOffsetX = 1.5 * window.devicePixelRatio;
+            this.ctx.shadowOffsetY = 1.5 * window.devicePixelRatio;
+            this.ctx.drawImage(
+                this.mouseImage,
+                Math.round(this.virtualMouseX),
+                Math.round(this.virtualMouseY),
+                this.mouseImage.width / 40,
+                this.mouseImage.height / 40,
+            );
+            this.ctx.restore();
+        }
+
+        this.ctx.restore();
+    }
+
+    handleResize() {
+        this.canvas.width = this.canvas.clientWidth * window.devicePixelRatio;
+        this.canvas.height = this.canvas.clientHeight * window.devicePixelRatio;
+        if (this.clientSideMouse && this.simulateTouchpad) {
+            this.virtualMouseX = Math.min(Math.max(this.virtualMouseX, 0), this.canvas.clientWidth);
+            this.virtualMouseY = Math.min(Math.max(this.virtualMouseY, 0), this.canvas.clientHeight);
+        }
+        this.draw();
+    }
+
+    handleVideoFrame() {
+        this.draw();
+        this.videoFrameCallback = this.video.requestVideoFrameCallback(this.handleVideoFrame.bind(this));
     }
 
     handleMouseMove(event) {
         if (this.clientSideMouse) {
             const message = {
                 type: "mousemoveabs",
-                ...positionInVideo(event.clientX, event.clientY, this.video),
+                ...this.positionInVideo(event.clientX, event.clientY),
             };
             this.sendOrdered(message);
         } else {
@@ -572,7 +623,7 @@ class StreamingWindow {
                     if (this.clientSideMouse) {
                         const message = {
                             type: "mousemoveabs",
-                            ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
+                            ...this.positionInVideo(this.virtualMouseX, this.virtualMouseY),
                         };
                         this.sendOrdered(message);
                     }
@@ -592,7 +643,7 @@ class StreamingWindow {
                     const message = {
                         type: "touchstart",
                         id: Math.abs(touch.id) % 10,
-                        ...positionInVideo(touch.clientX, touch.clientY, this.video),
+                        ...this.positionInVideo(touch.clientX, touch.clientY),
                     };
                     this.sendOrdered(message);
                     this.pushTouch(touch);
@@ -613,7 +664,7 @@ class StreamingWindow {
                         if (this.clientSideMouse) {
                             const message = {
                                 type: "mousemoveabs",
-                                ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
+                                ...this.positionInVideo(this.virtualMouseX, this.virtualMouseY),
                             };
                             this.sendOrdered(message);
                         }
@@ -651,7 +702,7 @@ class StreamingWindow {
                         if (this.clientSideMouse) {
                             const message = {
                                 type: "mousemoveabs",
-                                ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
+                                ...this.positionInVideo(this.virtualMouseX, this.virtualMouseY),
                             };
                             this.sendOrdered(message);
                         }
@@ -709,7 +760,7 @@ class StreamingWindow {
                         );
                         const message = {
                             type: "mousemoveabs",
-                            ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
+                            ...this.positionInVideo(this.virtualMouseX, this.virtualMouseY),
                         };
                         this.sendOrdered(message);
                     } else {
@@ -745,7 +796,7 @@ class StreamingWindow {
                             );
                             const message = {
                                 type: "mousemoveabs",
-                                ...positionInVideo(this.virtualMouseX, this.virtualMouseY, this.video),
+                                ...this.positionInVideo(this.virtualMouseX, this.virtualMouseY),
                             };
                             this.sendOrdered(message);
                         } else {
@@ -767,7 +818,7 @@ class StreamingWindow {
                     const message = {
                         type: "touchmove",
                         id: Math.abs(touch.id) % 10,
-                        ...positionInVideo(touch.clientX, touch.clientY, this.video),
+                        ...this.positionInVideo(touch.clientX, touch.clientY),
                     };
                     this.sendOrdered(message);
                 }
@@ -798,7 +849,7 @@ class StreamingWindow {
 
             const message = {
                 type: "pen",
-                ...positionInVideo(event.clientX, event.clientY, this.video),
+                ...this.positionInVideo(event.clientX, event.clientY),
                 pressure: Math.max(event.pressure, 0.001),
                 tiltX: Math.round(event.tiltX),
                 tiltY: Math.round(event.tiltY),
@@ -819,7 +870,7 @@ class StreamingWindow {
         } else if (event.pointerType === "pen") {
             const message = {
                 type: "pen",
-                ...positionInVideo(event.clientX, event.clientY, this.video),
+                ...this.positionInVideo(event.clientX, event.clientY),
                 pressure: 0,
                 tiltX: Math.round(event.tiltX),
                 tiltY: Math.round(event.tiltY),
@@ -842,7 +893,7 @@ class StreamingWindow {
 
             const message = {
                 type: "pen",
-                ...positionInVideo(event.clientX, event.clientY, this.video),
+                ...this.positionInVideo(event.clientX, event.clientY),
                 pressure: Math.max(event.pressure, 0.001),
                 tiltX: Math.round(event.tiltX),
                 tiltY: Math.round(event.tiltY),
