@@ -62,6 +62,36 @@ class Range {
     }
 }
 
+class ThemeColorManager {
+    constructor(defaultLightColor = "#FFFFFF", defaultDarkColor = "#13171F") {
+        this.defaultLightColor = defaultLightColor;
+        this.defaultDarkColor = defaultDarkColor;
+
+        this.mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        this.mediaQuery.addEventListener("change", () => this.restoreThemeColor());
+
+        this.restoreThemeColor();
+    }
+
+    getMeta() {
+        let ret = document.querySelector("meta[name='theme-color']:not([media])");
+        if (!ret) {
+            ret = document.createElement("meta");
+            ret.name = "theme-color";
+            document.head.appendChild(ret);
+        }
+        return ret;
+    }
+
+    setThemeColor(r, g, b) {
+        getMeta().setAttribute("content", `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`);
+    }
+
+    restoreThemeColor() {
+        getMeta().setAttribute("content", this.mediaQuery.matches ? this.defaultDarkColor : this.defaultLightColor);
+    }
+}
+
 class SetupForm {
     constructor() {
         this.inner = document.createElement("form");
@@ -183,6 +213,8 @@ class StreamingWindow {
 
         this.touches = [];
         this.lastRightClickTime = 0;
+
+        this.themeColorManager = new ThemeColorManager();
 
         this.inner.style.display = "flex";
         this.inner.style.boxSizing = "border-box";
@@ -510,8 +542,23 @@ class StreamingWindow {
             this.ctx.imageSmoothingEnabled = false;
             this.ctx.drawImage(this.video, letterboxed.x, letterboxed.y, letterboxed.width, letterboxed.height);
             this.ctx.restore();
+
+            let r = 0;
+            let g = 0;
+            let b = 0;
+            const imageData = this.ctx.getImageData(letterboxed.x, letterboxed.y, letterboxed.width, 1);
+            for (let i = 0; i < imageData.width; ++i) {
+                r += imageData.data[i * 4]
+                g += imageData.data[i * 4 + 1]
+                b += imageData.data[i * 4 + 2]
+            }
+            r /= imageData.width;
+            g /= imageData.width;
+            b /= imageData.width;
+            this.themeColorManager.setThemeColor(r, g, b);
         } else {
             this.ctx.drawImage(this.video, letterboxed.x, letterboxed.y, letterboxed.width, letterboxed.height);
+            this.themeColorManager.restoreThemeColor();
         }
 
         if (this.clientSideMouse && this.simulateTouchpad && this.mouseImage.complete) {
