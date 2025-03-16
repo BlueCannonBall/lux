@@ -451,22 +451,22 @@ class StreamingWindow {
         let height;
 
         const videoAspectRatio = this.video.videoWidth / this.video.videoHeight;
-        const windowAspectRatio = this.canvas.clientWidth / this.canvas.clientHeight;
+        const windowAspectRatio = this.canvas.width / this.canvas.height;
         if (videoAspectRatio > windowAspectRatio) {
             x = 0;
-            width = this.canvas.clientWidth;
-            height = (this.canvas.clientWidth / this.video.videoWidth) * this.video.videoHeight;
-            y = (this.canvas.clientHeight - height) / 2;
+            width = this.canvas.width;
+            height = (this.canvas.width / this.video.videoWidth) * this.video.videoHeight;
+            y = (this.canvas.height - height) / 2;
         } else if (videoAspectRatio < windowAspectRatio) {
             y = 0;
-            width = (this.canvas.clientHeight / this.video.videoHeight) * this.video.videoWidth;
-            height = this.canvas.clientHeight;
-            x = (this.canvas.clientWidth - width) / 2;
+            width = (this.canvas.height / this.video.videoHeight) * this.video.videoWidth;
+            height = this.canvas.height;
+            x = (this.canvas.width - width) / 2;
         } else {
             x = 0;
             y = 0;
-            width = this.canvas.clientWidth;
-            height = this.canvas.clientHeight;
+            width = this.canvas.width;
+            height = this.canvas.height;
         }
 
         return {
@@ -504,13 +504,15 @@ class StreamingWindow {
         this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        this.ctx.save();
-        this.ctx.imageSmoothingEnabled = false;
-        {
-            const letterboxed = this.letterbox();
+        const letterboxed = this.letterbox();
+        if (this.video.videoWidth / this.video.videoHeight === this.canvas.clientWidth / this.canvas.clientHeight) {
+            this.ctx.save();
+            this.ctx.imageSmoothingEnabled = false;
+            this.ctx.drawImage(this.video, letterboxed.x, letterboxed.y, letterboxed.width, letterboxed.height);
+            this.ctx.restore();
+        } else {
             this.ctx.drawImage(this.video, letterboxed.x, letterboxed.y, letterboxed.width, letterboxed.height);
         }
-        this.ctx.restore();
 
         if (this.clientSideMouse && this.simulateTouchpad && this.mouseImage.complete) {
             this.ctx.save();
