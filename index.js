@@ -432,24 +432,22 @@ class VideoWindow {
     moveVirtualMouse(x, y) {
         this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), this.canvas.clientWidth - 1);
         this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), this.canvas.clientHeight - 1);
-        this.drawVirtualMouse();
+        if (this.mouseImage.complete) this.drawVirtualMouse();
     }
 
     drawVirtualMouse() {
-        if (this.mouseImage.complete) {
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
-            this.ctx.shadowBlur = 5;
-            this.ctx.shadowOffsetX = 1.5 * window.devicePixelRatio;
-            this.ctx.shadowOffsetY = 1.5 * window.devicePixelRatio;
-            this.ctx.drawImage(
-                this.mouseImage,
-                Math.round(this.virtualMouseX * window.devicePixelRatio),
-                Math.round(this.virtualMouseY * window.devicePixelRatio),
-                this.mouseImage.width / 40 * window.devicePixelRatio,
-                this.mouseImage.height / 40 * window.devicePixelRatio,
-            );
-        }
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+        this.ctx.shadowBlur = 5;
+        this.ctx.shadowOffsetX = 1.5 * window.devicePixelRatio;
+        this.ctx.shadowOffsetY = 1.5 * window.devicePixelRatio;
+        this.ctx.drawImage(
+            this.mouseImage,
+            Math.round(this.virtualMouseX * window.devicePixelRatio),
+            Math.round(this.virtualMouseY * window.devicePixelRatio),
+            this.mouseImage.width / 40 * window.devicePixelRatio,
+            this.mouseImage.height / 40 * window.devicePixelRatio,
+        );
     }
 
     pushTouch(touch) {
@@ -482,16 +480,6 @@ class VideoWindow {
                 this.sendOrdered(message);
             }
             this.touches = [];
-        }
-    }
-
-    handleResize() {
-        this.canvas.width = this.canvas.clientWidth * window.devicePixelRatio;
-        this.canvas.height = this.canvas.clientHeight * window.devicePixelRatio;
-        if (this.clientSideMouse && this.simulateTouchpad) {
-            this.virtualMouseX = Math.min(this.virtualMouseX, this.canvas.clientWidth - 1);
-            this.virtualMouseY = Math.min(this.virtualMouseY, this.canvas.clientHeight - 1);
-            this.drawVirtualMouse();
         }
     }
 
@@ -848,6 +836,16 @@ class VideoWindow {
                 tiltY: Math.round(event.tiltY),
             };
             this.sendOrdered(message);
+        }
+    }
+
+    handleResize() {
+        this.canvas.width = this.canvas.clientWidth * window.devicePixelRatio;
+        this.canvas.height = this.canvas.clientHeight * window.devicePixelRatio;
+        if (!this.viewOnly && this.clientSideMouse && this.simulateTouchpad) {
+            this.virtualMouseX = Math.min(this.virtualMouseX, this.canvas.clientWidth - 1);
+            this.virtualMouseY = Math.min(this.virtualMouseY, this.canvas.clientHeight - 1);
+            this.drawVirtualMouse();
         }
     }
 }
