@@ -86,6 +86,7 @@ class SetupForm {
         this.inner.appendChild(this.clientSideMouseCheckbox.inner);
 
         this.simulateTouchpadCheckbox = new Checkbox("Simulate touchpad");
+        this.simulateTouchpadCheckbox.checkbox.disabled = !navigator.maxTouchPoints;
         this.inner.appendChild(this.simulateTouchpadCheckbox.inner);
 
         this.naturalTouchScrollingCheckbox = new Checkbox("Natural touch scrolling");
