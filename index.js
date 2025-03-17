@@ -475,22 +475,22 @@ class StreamingWindow {
         let height;
 
         const videoAspectRatio = this.video.videoWidth / this.video.videoHeight;
-        const windowAspectRatio = this.canvas.clientWidth / this.canvas.clientHeight;
+        const windowAspectRatio = this.canvas.width / this.canvas.height;
         if (videoAspectRatio > windowAspectRatio) {
             x = 0;
-            width = this.canvas.clientWidth;
-            height = (this.canvas.clientWidth / this.video.videoWidth) * this.video.videoHeight;
-            y = (this.canvas.clientHeight - height) / 2;
+            width = this.canvas.width;
+            height = (this.canvas.width / this.video.videoWidth) * this.video.videoHeight;
+            y = (this.canvas.height - height) / 2;
         } else if (videoAspectRatio < windowAspectRatio) {
             y = 0;
-            width = (this.canvas.clientHeight / this.video.videoHeight) * this.video.videoWidth;
-            height = this.canvas.clientHeight;
-            x = (this.canvas.clientWidth - width) / 2;
+            width = (this.canvas.height / this.video.videoHeight) * this.video.videoWidth;
+            height = this.canvas.height;
+            x = (this.canvas.width - width) / 2;
         } else {
             x = 0;
             y = 0;
-            width = this.canvas.clientWidth;
-            height = this.canvas.clientHeight;
+            width = this.canvas.width;
+            height = this.canvas.height;
         }
 
         return {
@@ -523,16 +523,12 @@ class StreamingWindow {
     }
 
     draw() {
-        this.ctx.save();
-
-        this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        const letterboxed = this.letterbox();
         if (this.video.videoWidth / this.video.videoHeight === this.canvas.clientWidth / this.canvas.clientHeight) {
             this.ctx.save();
             this.ctx.imageSmoothingEnabled = false;
-            this.ctx.drawImage(this.video, letterboxed.x, letterboxed.y, letterboxed.width, letterboxed.height);
+            this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
             this.ctx.restore();
 
             let r = 0;
@@ -540,15 +536,16 @@ class StreamingWindow {
             let b = 0;
             const imageData = this.ctx.getImageData(0, 0, this.canvas.width, 1);
             for (let i = 0; i < this.canvas.width; ++i) {
-                r += imageData.data[i * 4]
-                g += imageData.data[i * 4 + 1]
-                b += imageData.data[i * 4 + 2]
+                r += imageData.data[i * 4];
+                g += imageData.data[i * 4 + 1];
+                b += imageData.data[i * 4 + 2];
             }
             r = Math.round(r / this.canvas.width);
             g = Math.round(g / this.canvas.width);
             b = Math.round(b / this.canvas.width);
             window.themeColorManager.setThemeColor(r, g, b);
         } else {
+            const letterboxed = this.letterbox();
             this.ctx.drawImage(this.video, letterboxed.x, letterboxed.y, letterboxed.width, letterboxed.height);
             window.themeColorManager.restoreThemeColor();
         }
@@ -561,15 +558,13 @@ class StreamingWindow {
             this.ctx.shadowOffsetY = 1.5 * window.devicePixelRatio;
             this.ctx.drawImage(
                 this.mouseImage,
-                Math.round(this.virtualMouseX),
-                Math.round(this.virtualMouseY),
-                this.mouseImage.width / 40,
-                this.mouseImage.height / 40,
+                Math.round(this.virtualMouseX * window.devicePixelRatio),
+                Math.round(this.virtualMouseY * window.devicePixelRatio),
+                this.mouseImage.width / 40 * window.devicePixelRatio,
+                this.mouseImage.height / 40 * window.devicePixelRatio,
             );
             this.ctx.restore();
         }
-
-        this.ctx.restore();
     }
 
     handleResize() {
