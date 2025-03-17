@@ -33,6 +33,14 @@ class Checkbox {
     set checked(value) {
         return this.checkbox.checked = value;
     }
+
+    get disabled() {
+        return this.checkbox.disabled;
+    }
+
+    set disabled(value) {
+        return this.checkbox.disabled = value;
+    }
 }
 
 class Range {
@@ -53,6 +61,22 @@ class Range {
         this.inner.appendChild(this.range);
     }
 
+    get min() {
+        return this.range.min;
+    }
+
+    set min(value) {
+        return this.range.min = value;
+    }
+
+    get max() {
+        return this.range.max;
+    }
+
+    set max(value) {
+        return this.range.max = value;
+    }
+
     get value() {
         return this.range.value;
     }
@@ -60,9 +84,25 @@ class Range {
     set value(value) {
         return this.range.value = value;
     }
+
+    get step() {
+        return this.range.step;
+    }
+
+    set step(value) {
+        return this.range.step = value;
+    }
+
+    get disabled() {
+        return this.range.disabled;
+    }
+
+    set disabled(value) {
+        return this.range.disabled = value;
+    }
 }
 
-class SetupForm {
+class SetupWindow {
     constructor() {
         this.inner = document.createElement("form");
 
@@ -86,7 +126,7 @@ class SetupForm {
         this.inner.appendChild(this.clientSideMouseCheckbox.inner);
 
         this.simulateTouchpadCheckbox = new Checkbox("Simulate touchpad");
-        this.simulateTouchpadCheckbox.checkbox.disabled = !navigator.maxTouchPoints;
+        this.simulateTouchpadCheckbox.disabled = !navigator.maxTouchPoints;
         this.inner.appendChild(this.simulateTouchpadCheckbox.inner);
 
         this.naturalTouchScrollingCheckbox = new Checkbox("Natural touch scrolling");
@@ -851,5 +891,5 @@ class VideoWindow {
     }
 }
 
-const setupForm = new SetupForm();
-document.body.appendChild(setupForm.inner);
+const setupWindow = new SetupWindow();
+document.body.appendChild(setupWindow.inner);
