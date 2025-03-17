@@ -67,30 +67,27 @@ class ThemeColorManager {
         this.defaultLightColor = defaultLightColor;
         this.defaultDarkColor = defaultDarkColor;
 
-        this.mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-        this.mediaQuery.addEventListener("change", () => this.restoreThemeColor());
+        document.querySelectorAll('meta[name="theme-color"]').forEach(meta => meta.remove());
+        this.meta = document.createElement("meta");
+        this.meta.name = "theme-color";
+        document.head.appendChild(this.meta);
 
+        this.mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        this.mediaQuery.addEventListener("change", () => {
+            this.restoreThemeColor()
+        });
         this.restoreThemeColor();
     }
 
-    getMeta() {
-        let ret = document.querySelector("meta[name='theme-color']:not([media])");
-        if (!ret) {
-            ret = document.createElement("meta");
-            ret.name = "theme-color";
-            document.head.appendChild(ret);
-        }
-        return ret;
-    }
-
     setThemeColor(r, g, b) {
-        this.getMeta().setAttribute("content", `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`);
+        this.meta.content = `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
     }
 
     restoreThemeColor() {
-        this.getMeta().setAttribute("content", this.mediaQuery.matches ? this.defaultDarkColor : this.defaultLightColor);
+        this.meta.content = this.mediaQuery.matches ? this.defaultDarkColor : this.defaultLightColor;
     }
 }
+window.themeColorManager = new ThemeColorManager();
 
 class SetupForm {
     constructor() {
@@ -213,8 +210,6 @@ class StreamingWindow {
 
         this.touches = [];
         this.lastRightClickTime = 0;
-
-        this.themeColorManager = new ThemeColorManager();
 
         this.inner.style.display = "flex";
         this.inner.style.boxSizing = "border-box";
@@ -555,10 +550,10 @@ class StreamingWindow {
             r /= imageData.width;
             g /= imageData.width;
             b /= imageData.width;
-            this.themeColorManager.setThemeColor(r, g, b);
+            window.themeColorManager.setThemeColor(r, g, b);
         } else {
             this.ctx.drawImage(this.video, letterboxed.x, letterboxed.y, letterboxed.width, letterboxed.height);
-            this.themeColorManager.restoreThemeColor();
+            window.themeColorManager.restoreThemeColor();
         }
 
         if (this.clientSideMouse && this.simulateTouchpad && this.mouseImage.complete) {
