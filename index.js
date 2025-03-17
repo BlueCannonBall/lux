@@ -210,10 +210,9 @@ class StreamingWindow {
         this.touches = [];
         this.lastRightClickTime = 0;
 
-        this.inner.style.display = "flex";
-        this.inner.style.boxSizing = "border-box";
         this.inner.style.width = "100%";
         this.inner.style.height = "100%";
+        this.inner.style.display = "flex";
         this.inner.style.justifyContent = "center";
         this.inner.style.alignItems = "center";
     }
@@ -292,8 +291,8 @@ class StreamingWindow {
 
                 this.canvas = document.createElement("canvas");
                 this.ctx = this.canvas.getContext("2d");
-                this.canvas.style.flex = "1";
                 this.canvas.style.minWidth = "0";
+                this.canvas.style.flex = "1";
                 this.canvas.style.userSelect = "none";
                 this.canvas.style.webkitUserSelect = "none";
 
