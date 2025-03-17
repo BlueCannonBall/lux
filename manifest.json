@@ -1,11 +1,11 @@
 {
     "name": "Lux",
     "short_name": "Lux",
-    "description": "A high-performance remote desktop app.",
+    "description": "A high-performance remote desktop client.",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#13171F",
     "theme_color": "#13171F",
+    "background_color": "#13171F",
     "icons": [
         {
             "src": "icon.png",
