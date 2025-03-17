@@ -342,6 +342,7 @@ class VideoWindow {
                 this.handleResize();
             } else if (event.track.kind === "audio") {
                 this.audio = media;
+                this.audio.controls = false;
                 this.audio.srcObject = event.streams[0];
                 this.audio.play(); // Autoplay is buggy
             }
