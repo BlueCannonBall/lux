@@ -67,7 +67,6 @@ class ThemeColorManager {
         this.defaultLightColor = defaultLightColor;
         this.defaultDarkColor = defaultDarkColor;
 
-        document.querySelectorAll('meta[name="theme-color"]').forEach(meta => meta.remove());
         this.meta = document.createElement("meta");
         this.meta.name = "theme-color";
         document.head.appendChild(this.meta);
