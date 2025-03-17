@@ -538,15 +538,15 @@ class StreamingWindow {
             let r = 0;
             let g = 0;
             let b = 0;
-            const imageData = this.ctx.getImageData(letterboxed.x, letterboxed.y, letterboxed.width, 1);
-            for (let i = 0; i < imageData.width; ++i) {
+            const imageData = this.ctx.getImageData(0, 0, this.canvas.width, 1);
+            for (let i = 0; i < this.canvas.width; ++i) {
                 r += imageData.data[i * 4]
                 g += imageData.data[i * 4 + 1]
                 b += imageData.data[i * 4 + 2]
             }
-            r /= imageData.width;
-            g /= imageData.width;
-            b /= imageData.width;
+            r /= this.canvas.width;
+            g /= this.canvas.width;
+            b /= this.canvas.width;
             window.themeColorManager.setThemeColor(r, g, b);
         } else {
             this.ctx.drawImage(this.video, letterboxed.x, letterboxed.y, letterboxed.width, letterboxed.height);
