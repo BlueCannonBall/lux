@@ -290,7 +290,10 @@ class StreamingWindow {
                 this.video.play();
 
                 this.canvas = document.createElement("canvas");
-                this.ctx = this.canvas.getContext("2d");
+                this.ctx = this.canvas.getContext("2d", {
+                    desynchronized: true,
+                    willReadFrequently: true,
+                });
                 this.canvas.style.minWidth = "0";
                 this.canvas.style.flex = "1";
                 this.canvas.style.userSelect = "none";
@@ -317,7 +320,6 @@ class StreamingWindow {
                             this.mouseImage.onload = this.draw.bind(this);
                         }
                     }
-                    window.addEventListener("resize", this.handleResize.bind(this), { signal: this.abortController.signal });
                     this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this), { signal: this.abortController.signal });
                     this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this), { signal: this.abortController.signal });
                     this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this), { signal: this.abortController.signal });
@@ -358,6 +360,7 @@ class StreamingWindow {
                         signal: this.abortController.signal,
                     });
                 }
+                window.addEventListener("resize", this.handleResize.bind(this), { signal: this.abortController.signal });
                 this.videoFrameCallback = this.video.requestVideoFrameCallback(this.handleVideoFrame.bind(this));
 
                 this.inner.innerText = "";
