@@ -254,6 +254,7 @@ class StreamingWindow {
                 if (this.audio) {
                     this.audio.pause();
                 }
+                window.themeColorManager.restoreThemeColor();
 
                 const streamingWindow = new StreamingWindow(
                     this.clientSideMouse,
