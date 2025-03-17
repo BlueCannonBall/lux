@@ -365,8 +365,6 @@ class StreamingWindow {
                 this.inner.ariaBusy = false;
                 this.inner.style.removeProperty("justify-content");
                 this.inner.style.removeProperty("align-items");
-                this.inner.style.flex = "1";
-                this.inner.style.minHeight = "0";
                 this.inner.appendChild(this.canvas);
                 this.handleResize();
             }
