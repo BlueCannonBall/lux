@@ -49,7 +49,7 @@ class Range {
         this.range.max = max;
         this.value = value;
         this.range.step = step;
-        this.range.style.marginBottom = '0';
+        this.range.style.marginBottom = "0";
         this.inner.appendChild(this.range);
     }
 
@@ -61,32 +61,6 @@ class Range {
         return this.range.value = value;
     }
 }
-
-class ThemeColorManager {
-    constructor(defaultLightColor = "#FFFFFF", defaultDarkColor = "#13171F") {
-        this.defaultLightColor = defaultLightColor;
-        this.defaultDarkColor = defaultDarkColor;
-
-        this.meta = document.createElement("meta");
-        this.meta.name = "theme-color";
-        document.head.appendChild(this.meta);
-
-        this.mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-        this.mediaQuery.addEventListener("change", () => {
-            this.restoreThemeColor()
-        });
-        this.restoreThemeColor();
-    }
-
-    setThemeColor(r, g, b) {
-        this.meta.content = `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
-    }
-
-    restoreThemeColor() {
-        this.meta.content = this.mediaQuery.matches ? this.defaultDarkColor : this.defaultLightColor;
-    }
-}
-window.themeColorManager = new ThemeColorManager();
 
 class SetupForm {
     constructor() {
@@ -140,10 +114,8 @@ class SetupForm {
         this.inner.style.width = "100%";
         this.inner.style.height = "100%";
         this.inner.style.minHeight = "fit-content";
-
         this.inner.style.paddingLeft = "15%";
         this.inner.style.paddingRight = "15%";
-
         this.inner.style.display = "flex";
         this.inner.style.flexDirection = "column";
         this.inner.style.justifyContent = "center";
@@ -168,23 +140,23 @@ class SetupForm {
         localStorage.setItem("view_only", this.viewOnlyCheckbox.checked.toString());
         localStorage.setItem("sensitivity", this.mouseSensitivityRange.value);
 
-        const streamingWindow = new StreamingWindow(
+        const videoWindow = new VideoWindow(
             this.clientSideMouseCheckbox.checked,
             this.simulateTouchpadCheckbox.checked,
             this.naturalTouchScrollingCheckbox.checked,
             this.viewOnlyCheckbox.checked,
             this.mouseSensitivityRange.value,
         );
-        streamingWindow.startStreaming(
+        videoWindow.startStreaming(
             this.addressInput.value,
             this.passwordInput.value,
             true,
         );
-        this.inner.replaceWith(streamingWindow.inner);
+        this.inner.replaceWith(videoWindow.inner);
     }
 }
 
-class StreamingWindow {
+class VideoWindow {
     constructor(
         clientSideMouse = false,
         simulateTouchpad = false,
@@ -245,17 +217,11 @@ class StreamingWindow {
             if (this.conn.iceConnectionState === "closed" ||
                 this.conn.iceConnectionState === "failed" ||
                 this.conn.iceConnectionState === "disconnected") {
+                if (this.video) this.video.pause();
+                if (this.audio) this.audio.pause();
                 this.abortController.abort();
-                if (this.video) {
-                    this.video.pause();
-                    this.video.cancelVideoFrameCallback(this.videoFrameCallback);
-                }
-                if (this.audio) {
-                    this.audio.pause();
-                }
-                window.themeColorManager.restoreThemeColor();
 
-                const streamingWindow = new StreamingWindow(
+                const videoWindow = new VideoWindow(
                     this.clientSideMouse,
                     this.simulateTouchpad,
                     this.naturalTouchScrolling,
@@ -264,8 +230,8 @@ class StreamingWindow {
                     this.virtualMouseX,
                     this.virtualMouseY,
                 );
-                streamingWindow.startStreaming(address, password, false);
-                this.inner.replaceWith(streamingWindow.inner);
+                videoWindow.startStreaming(address, password, false);
+                this.inner.replaceWith(videoWindow.inner);
             }
         }, { signal: this.abortController.signal });
 
@@ -280,21 +246,15 @@ class StreamingWindow {
 
         this.conn.addEventListener("track", event => {
             const media = document.createElement(event.track.kind);
-            if (event.track.kind === "audio") {
-                this.audio = media;
-                this.audio.srcObject = event.streams[0];
-                this.audio.play();
-            } else if (event.track.kind === "video") {
+            if (event.track.kind === "video") {
                 this.video = media;
+                this.video.controls = false;
+                this.video.playsInline = true;
                 this.video.srcObject = event.streams[0];
-                this.video.play();
+                this.video.play(); // Autoplay is buggy
 
                 this.canvas = document.createElement("canvas");
                 this.ctx = this.canvas.getContext("2d", { desynchronized: true });
-                this.canvas.style.minWidth = "0";
-                this.canvas.style.flex = "1";
-                this.canvas.style.userSelect = "none";
-                this.canvas.style.webkitUserSelect = "none";
 
                 if (!this.viewOnly) {
                     if (!this.clientSideMouse) {
@@ -310,12 +270,12 @@ class StreamingWindow {
                             }
                         }, { signal: this.abortController.signal });
                     } else {
-                        document.addEventListener("contextmenu", event => event.preventDefault(), { signal: this.abortController.signal });
                         if (this.simulateTouchpad) {
                             this.mouseImage = new Image();
                             this.mouseImage.src = "mouse.png";
-                            this.mouseImage.onload = this.draw.bind(this);
+                            this.mouseImage.onload = this.drawVirtualMouse.bind(this);
                         }
+                        document.addEventListener("contextmenu", event => event.preventDefault(), { signal: this.abortController.signal });
                     }
                     this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this), { signal: this.abortController.signal });
                     this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this), { signal: this.abortController.signal });
@@ -358,14 +318,32 @@ class StreamingWindow {
                     });
                 }
                 window.addEventListener("resize", this.handleResize.bind(this), { signal: this.abortController.signal });
-                this.videoFrameCallback = this.video.requestVideoFrameCallback(this.handleVideoFrame.bind(this));
+
+                this.video.style.minWidth = "0";
+                this.video.style.flex = "1";
+                this.video.style.userSelect = "none";
+                this.video.style.webkitUserSelect = "none";
+
+                this.canvas.style.position = "absolute";
+                this.canvas.style.top = "0";
+                this.canvas.style.left = "0";
+                this.canvas.style.width = "100%";
+                this.canvas.style.height = "100%";
+                this.canvas.style.userSelect = "none";
+                this.canvas.style.webkitUserSelect = "none";
 
                 this.inner.innerText = "";
                 this.inner.ariaBusy = false;
                 this.inner.style.removeProperty("justify-content");
                 this.inner.style.removeProperty("align-items");
+
+                this.inner.appendChild(this.video);
                 this.inner.appendChild(this.canvas);
                 this.handleResize();
+            } else if (event.track.kind === "audio") {
+                this.audio = media;
+                this.audio.srcObject = event.streams[0];
+                this.audio.play(); // Autoplay is buggy
             }
         }, { signal: this.abortController.signal });
 
@@ -429,10 +407,48 @@ class StreamingWindow {
         }
     }
 
+    positionInVideo(x, y) {
+        const videoAspectRatio = this.video.videoWidth / this.video.videoHeight;
+        const windowAspectRatio = this.canvas.clientWidth / this.canvas.clientHeight;
+        if (videoAspectRatio > windowAspectRatio) {
+            return {
+                x: Math.round(x / (this.canvas.clientWidth / this.video.videoWidth)),
+                y: Math.round((y - ((1 - windowAspectRatio / videoAspectRatio) * this.canvas.clientHeight) / 2) / (this.canvas.clientWidth / this.video.videoWidth)),
+            };
+        } else if (videoAspectRatio < windowAspectRatio) {
+            return {
+                x: Math.round((x - ((1 - videoAspectRatio / windowAspectRatio) * this.canvas.clientWidth) / 2) / (this.canvas.clientHeight / this.video.videoHeight)),
+                y: Math.round(y / (this.canvas.clientHeight / this.video.videoHeight)),
+            };
+        } else {
+            return {
+                x: Math.round(x / (this.canvas.clientWidth / this.video.videoWidth)),
+                y: Math.round(y / (this.canvas.clientHeight / this.video.videoHeight)),
+            };
+        }
+    }
+
     moveVirtualMouse(x, y) {
         this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), this.canvas.clientWidth - 1);
         this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), this.canvas.clientHeight - 1);
-        this.draw();
+        this.drawVirtualMouse();
+    }
+
+    drawVirtualMouse() {
+        if (this.mouseImage.complete) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+            this.ctx.shadowBlur = 5;
+            this.ctx.shadowOffsetX = 1.5 * window.devicePixelRatio;
+            this.ctx.shadowOffsetY = 1.5 * window.devicePixelRatio;
+            this.ctx.drawImage(
+                this.mouseImage,
+                Math.round(this.virtualMouseX * window.devicePixelRatio),
+                Math.round(this.virtualMouseY * window.devicePixelRatio),
+                this.mouseImage.width / 40 * window.devicePixelRatio,
+                this.mouseImage.height / 40 * window.devicePixelRatio,
+            );
+        }
     }
 
     pushTouch(touch) {
@@ -468,118 +484,14 @@ class StreamingWindow {
         }
     }
 
-    letterbox() {
-        let x;
-        let y;
-        let width;
-        let height;
-
-        const videoAspectRatio = this.video.videoWidth / this.video.videoHeight;
-        const windowAspectRatio = this.canvas.width / this.canvas.height;
-        if (videoAspectRatio > windowAspectRatio) {
-            x = 0;
-            width = this.canvas.width;
-            height = (this.canvas.width / this.video.videoWidth) * this.video.videoHeight;
-            y = (this.canvas.height - height) / 2;
-        } else if (videoAspectRatio < windowAspectRatio) {
-            y = 0;
-            width = (this.canvas.height / this.video.videoHeight) * this.video.videoWidth;
-            height = this.canvas.height;
-            x = (this.canvas.width - width) / 2;
-        } else {
-            x = 0;
-            y = 0;
-            width = this.canvas.width;
-            height = this.canvas.height;
-        }
-
-        return {
-            x: Math.floor(x),
-            y: Math.floor(y),
-            width: Math.floor(width),
-            height: Math.floor(height),
-        };
-    }
-
-    positionInVideo(x, y) {
-        const videoAspectRatio = this.video.videoWidth / this.video.videoHeight;
-        const windowAspectRatio = this.canvas.clientWidth / this.canvas.clientHeight;
-        if (videoAspectRatio > windowAspectRatio) {
-            return {
-                x: Math.round(x / (this.canvas.clientWidth / this.video.videoWidth)),
-                y: Math.round((y - ((1 - windowAspectRatio / videoAspectRatio) * this.canvas.clientHeight) / 2) / (this.canvas.clientWidth / this.video.videoWidth)),
-            };
-        } else if (videoAspectRatio < windowAspectRatio) {
-            return {
-                x: Math.round((x - ((1 - videoAspectRatio / windowAspectRatio) * this.canvas.clientWidth) / 2) / (this.canvas.clientHeight / this.video.videoHeight)),
-                y: Math.round(y / (this.canvas.clientHeight / this.video.videoHeight)),
-            };
-        } else {
-            return {
-                x: Math.round(x / (this.canvas.clientWidth / this.video.videoWidth)),
-                y: Math.round(y / (this.canvas.clientHeight / this.video.videoHeight)),
-            };
-        }
-    }
-
-    draw() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        if (this.video.videoWidth / this.video.videoHeight === this.canvas.clientWidth / this.canvas.clientHeight) {
-            this.ctx.save();
-            this.ctx.imageSmoothingEnabled = false;
-            this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-            this.ctx.restore();
-
-            let r = 0;
-            let g = 0;
-            let b = 0;
-            const imageData = this.ctx.getImageData(0, 0, this.canvas.width, 1);
-            for (let i = 0; i < this.canvas.width; ++i) {
-                r += imageData.data[i * 4];
-                g += imageData.data[i * 4 + 1];
-                b += imageData.data[i * 4 + 2];
-            }
-            r = Math.round(r / this.canvas.width);
-            g = Math.round(g / this.canvas.width);
-            b = Math.round(b / this.canvas.width);
-            window.themeColorManager.setThemeColor(r, g, b);
-        } else {
-            const letterboxed = this.letterbox();
-            this.ctx.drawImage(this.video, letterboxed.x, letterboxed.y, letterboxed.width, letterboxed.height);
-            window.themeColorManager.restoreThemeColor();
-        }
-
-        if (this.clientSideMouse && this.simulateTouchpad && this.mouseImage.complete) {
-            this.ctx.save();
-            this.ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
-            this.ctx.shadowBlur = 5;
-            this.ctx.shadowOffsetX = 1.5 * window.devicePixelRatio;
-            this.ctx.shadowOffsetY = 1.5 * window.devicePixelRatio;
-            this.ctx.drawImage(
-                this.mouseImage,
-                Math.round(this.virtualMouseX * window.devicePixelRatio),
-                Math.round(this.virtualMouseY * window.devicePixelRatio),
-                this.mouseImage.width / 40 * window.devicePixelRatio,
-                this.mouseImage.height / 40 * window.devicePixelRatio,
-            );
-            this.ctx.restore();
-        }
-    }
-
     handleResize() {
         this.canvas.width = this.canvas.clientWidth * window.devicePixelRatio;
         this.canvas.height = this.canvas.clientHeight * window.devicePixelRatio;
         if (this.clientSideMouse && this.simulateTouchpad) {
             this.virtualMouseX = Math.min(Math.max(this.virtualMouseX, 0), this.canvas.clientWidth);
             this.virtualMouseY = Math.min(Math.max(this.virtualMouseY, 0), this.canvas.clientHeight);
+            this.drawVirtualMouse();
         }
-        this.draw();
-    }
-
-    handleVideoFrame() {
-        this.draw();
-        this.videoFrameCallback = this.video.requestVideoFrameCallback(this.handleVideoFrame.bind(this));
     }
 
     handleMouseMove(event) {
