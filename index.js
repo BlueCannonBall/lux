@@ -290,7 +290,7 @@ class StreamingWindow {
                 this.video.play();
 
                 this.canvas = document.createElement("canvas");
-                this.ctx = this.canvas.getContext("2d", { desynchronized: true });
+                this.ctx = this.canvas.getContext("2d");
                 this.canvas.style.minWidth = "0";
                 this.canvas.style.flex = "1";
                 this.canvas.style.userSelect = "none";
