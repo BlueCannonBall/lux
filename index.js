@@ -488,8 +488,8 @@ class VideoWindow {
         this.canvas.width = this.canvas.clientWidth * window.devicePixelRatio;
         this.canvas.height = this.canvas.clientHeight * window.devicePixelRatio;
         if (this.clientSideMouse && this.simulateTouchpad) {
-            this.virtualMouseX = Math.min(Math.max(this.virtualMouseX, 0), this.canvas.clientWidth);
-            this.virtualMouseY = Math.min(Math.max(this.virtualMouseY, 0), this.canvas.clientHeight);
+            this.virtualMouseX = Math.min(this.virtualMouseX, this.canvas.clientWidth - 1);
+            this.virtualMouseY = Math.min(this.virtualMouseY, this.canvas.clientHeight - 1);
             this.drawVirtualMouse();
         }
     }
