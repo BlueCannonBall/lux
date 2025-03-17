@@ -544,9 +544,9 @@ class StreamingWindow {
                 g += imageData.data[i * 4 + 1]
                 b += imageData.data[i * 4 + 2]
             }
-            r /= this.canvas.width;
-            g /= this.canvas.width;
-            b /= this.canvas.width;
+            r = Math.round(r / this.canvas.width);
+            g = Math.round(g / this.canvas.width);
+            b = Math.round(b / this.canvas.width);
             window.themeColorManager.setThemeColor(r, g, b);
         } else {
             this.ctx.drawImage(this.video, letterboxed.x, letterboxed.y, letterboxed.width, letterboxed.height);
