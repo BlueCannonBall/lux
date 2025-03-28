@@ -135,7 +135,7 @@ class SetupWindow {
         this.viewOnlyCheckbox = new Checkbox("View only");
         this.inner.appendChild(this.viewOnlyCheckbox.inner);
 
-        this.tcpConnectivityCheckbox = new Checkbox("TCP Connectivity");
+        this.tcpConnectivityCheckbox = new Checkbox("TCP connectivity");
         this.inner.appendChild(this.tcpConnectivityCheckbox.inner);
 
         this.mouseSensitivityRange = new Range("Mouse sensitivity:", 0.1, 2.9, 1.5, 0.1);
