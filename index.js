@@ -486,8 +486,8 @@ class VideoWindow {
             this.mouseImage,
             Math.round(this.virtualMouseX * window.devicePixelRatio),
             Math.round(this.virtualMouseY * window.devicePixelRatio),
-            this.mouseImage.width / 40 * window.devicePixelRatio,
-            this.mouseImage.height / 40 * window.devicePixelRatio,
+            Math.round(this.mouseImage.width / 40 * window.devicePixelRatio),
+            Math.round(this.mouseImage.height / 40 * window.devicePixelRatio),
         );
     }
 
