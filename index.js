@@ -507,15 +507,17 @@ class VideoWindow {
         });
     }
 
-    clearTouches() {
+    clearTouches(mouseup = true) {
         if (this.simulateTouchpad) {
-            const message = {
-                type: "mouseup",
-            };
-            message.button = 0;
-            this.sendOrdered(message);
-            message.button = 2;
-            this.sendOrdered(message);
+            if (mouseup) {
+                const message = {
+                    type: "mouseup",
+                };
+                message.button = 0;
+                this.sendOrdered(message);
+                message.button = 2;
+                this.sendOrdered(message);
+            }
             this.touches = [];
         } else {
             for (const touch of this.touches) {
@@ -872,7 +874,7 @@ class VideoWindow {
                 radiusY: event.height / 2,
             }]);
         } else if (event.pointerType === "pen") {
-            this.clearTouches();
+            this.clearTouches(false);
 
             const message = {
                 type: "pen",
