@@ -4,6 +4,22 @@ window.onerror = (message, source, lineno, colno, error) => {
     return false;
 }
 
+function shallowEqual(a, b) {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+
+    for (const key of keysA) {
+        if (a[key] !== b[key]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -839,7 +855,10 @@ class VideoWindow {
                 tiltX: Math.round(event.tiltX),
                 tiltY: Math.round(event.tiltY),
             };
-            this.sendOrdered(message);
+            if (!shallowEqual(message, this.lastPenMessage)) {
+                this.sendOrdered(message);
+                this.lastPenMessage = message;
+            }
         }
     }
 
@@ -860,7 +879,10 @@ class VideoWindow {
                 tiltX: Math.round(event.tiltX),
                 tiltY: Math.round(event.tiltY),
             };
-            this.sendOrdered(message);
+            if (!shallowEqual(message, this.lastPenMessage)) {
+                this.sendOrdered(message);
+                this.lastPenMessage = message;
+            }
         }
     }
 
@@ -883,7 +905,10 @@ class VideoWindow {
                 tiltX: Math.round(event.tiltX),
                 tiltY: Math.round(event.tiltY),
             };
-            this.sendOrdered(message);
+            if (!shallowEqual(message, this.lastPenMessage)) {
+                this.sendOrdered(message);
+                this.lastPenMessage = message;
+            }
         }
     }
 
