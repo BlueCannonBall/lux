@@ -855,9 +855,9 @@ class VideoWindow {
                 tiltX: Math.round(event.tiltX),
                 tiltY: Math.round(event.tiltY),
             };
-            if (!shallowEqual(message, this.lastPenMessage)) {
-                this.sendOrdered(message);
-                this.lastPenMessage = message;
+            if (!shallowEqual(message, this.lastPenMessage)) { // Pen input on iOS is ASTOUNDINGLY BROKEN!
+                this.sendOrdered(message);                     // Safari gives you TWO of every pen-related event
+                this.lastPenMessage = message;                 // MANY SUCH CASES! See comments in Tenebra's input code
             }
         }
     }
