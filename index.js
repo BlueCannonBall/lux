@@ -151,9 +151,6 @@ class SetupWindow {
         this.viewOnlyCheckbox = new Checkbox("View only");
         this.inner.appendChild(this.viewOnlyCheckbox.inner);
 
-        this.fullscreenCheckbox = new Checkbox("Fullscreen");
-        this.inner.appendChild(this.fullscreenCheckbox.inner);
-
         this.tcpConnectivityCheckbox = new Checkbox("TCP connectivity");
         this.inner.appendChild(this.tcpConnectivityCheckbox.inner);
 
@@ -189,7 +186,6 @@ class SetupWindow {
         this.simulateTouchpadCheckbox.checked = localStorage.getItem("simulate_touchpad") === "true";
         this.naturalTouchScrollingCheckbox.checked = localStorage.getItem("natural_touch_scrolling") === "true";
         this.viewOnlyCheckbox.checked = localStorage.getItem("view_only") === "true";
-        this.fullscreenCheckbox.checked = localStorage.getItem("fullscreen") === "true";
         this.tcpConnectivityCheckbox.checked = localStorage.getItem("tcp_connectivity") === "true";
         this.mouseSensitivityRange.value = localStorage.getItem("sensitivity");
     }
@@ -203,7 +199,6 @@ class SetupWindow {
         localStorage.setItem("simulate_touchpad", this.simulateTouchpadCheckbox.checked.toString());
         localStorage.setItem("natural_touch_scrolling", this.naturalTouchScrollingCheckbox.checked.toString());
         localStorage.setItem("view_only", this.viewOnlyCheckbox.checked.toString());
-        localStorage.setItem("fullscreen", this.fullscreenCheckbox.checked.toString());
         localStorage.setItem("tcp_connectivity", this.tcpConnectivityCheckbox.checked.toString());
         localStorage.setItem("sensitivity", this.mouseSensitivityRange.value);
 
@@ -229,7 +224,6 @@ class VideoWindow {
         simulateTouchpad = false,
         naturalTouchScrolling = false,
         viewOnly = false,
-        fullscreen = false,
         mouseSensitivity = 1.5,
         virtualMouseX = window.innerWidth / 2,
         virtualMouseY = window.innerHeight / 2,
@@ -240,7 +234,6 @@ class VideoWindow {
         this.simulateTouchpad = simulateTouchpad;
         this.naturalTouchScrolling = naturalTouchScrolling;
         this.viewOnly = viewOnly;
-        this.fullscreen = fullscreen;
         this.mouseSensitivity = mouseSensitivity;
 
         this.abortController = new AbortController();
@@ -295,7 +288,6 @@ class VideoWindow {
                     this.simulateTouchpad,
                     this.naturalTouchScrolling,
                     this.viewOnly,
-                    this.fullscreen,
                     this.mouseSensitivity,
                     this.virtualMouseX,
                     this.virtualMouseY,
@@ -329,12 +321,14 @@ class VideoWindow {
                 if (!this.viewOnly) {
                     if (!this.clientSideMouse) {
                         this.canvas.addEventListener("click", async () => {
-                            if (this.fullscreen && this.canvas.requestFullscreen) {
-                                this.canvas.requestFullscreen().then(() => {
-                                    this.requestPointerLock();
-                                });
-                            } else {
-                                this.requestPointerLock();
+                            if (this.canvas.requestPointerLock) {
+                                try {
+                                    await this.canvas.requestPointerLock({
+                                        unadjustedMovement: true,
+                                    });
+                                } catch (e) {
+                                    await this.canvas.requestPointerLock();
+                                }
                             }
                         }, { signal: this.abortController.signal });
                     } else {
@@ -473,18 +467,6 @@ class VideoWindow {
     sendUnordered(message) {
         if (this.unorderedChannel.readyState === "open") {
             this.unorderedChannel.send(JSON.stringify(message));
-        }
-    }
-
-    async requestPointerLock() {
-        if (this.canvas.requestPointerLock) {
-            try {
-                await this.canvas.requestPointerLock({
-                    unadjustedMovement: true,
-                });
-            } catch (e) {
-                await this.canvas.requestPointerLock();
-            }
         }
     }
 
