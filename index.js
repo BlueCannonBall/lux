@@ -330,7 +330,7 @@ class VideoWindow {
                     if (!this.clientSideMouse) {
                         this.canvas.addEventListener("click", async () => {
                             if (this.fullscreen && this.canvas.requestFullscreen) {
-                                this.canvas.requestFullscreen({ navigationUI: "hide" }).then(() => {
+                                this.canvas.requestFullscreen().then(() => {
                                     this.requestPointerLock();
                                 });
                             } else {
