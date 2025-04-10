@@ -276,7 +276,7 @@ class VideoWindow {
                 this.conn.iceConnectionState === "failed" ||
                 this.conn.iceConnectionState === "disconnected") {
                 const url = new URL(window.location.href);
-                url.searchParams.set("reconnect", "");
+                url.searchParams.set("reconnect", "true");
                 window.location.href = url.toString();
             }
         });
@@ -882,7 +882,7 @@ class VideoWindow {
 }
 
 const url = new URL(window.location.href);
-if (url.searchParams.has("reconnect")) {
+if (url.searchParams.get("reconnect") === "true") {
     const videoWindow = new VideoWindow(
         localStorage.getItem("client_side_mouse") === "true",
         localStorage.getItem("simulate_touchpad") === "true",
