@@ -225,8 +225,6 @@ class VideoWindow {
         naturalTouchScrolling = false,
         viewOnly = false,
         mouseSensitivity = 1.5,
-        virtualMouseX = window.innerWidth / 2,
-        virtualMouseY = window.innerHeight / 2,
     ) {
         this.inner = document.createElement("div");
 
@@ -236,10 +234,8 @@ class VideoWindow {
         this.viewOnly = viewOnly;
         this.mouseSensitivity = mouseSensitivity;
 
-        this.abortController = new AbortController();
-
-        this.virtualMouseX = virtualMouseX
-        this.virtualMouseY = virtualMouseY;
+        this.virtualMouseX = 0
+        this.virtualMouseY = 0;
 
         this.touches = [];
         this.lastRightClickTime = 0;
@@ -279,23 +275,11 @@ class VideoWindow {
             if (this.conn.iceConnectionState === "closed" ||
                 this.conn.iceConnectionState === "failed" ||
                 this.conn.iceConnectionState === "disconnected") {
-                if (this.video) this.video.pause();
-                if (this.audio) this.audio.pause();
-                this.abortController.abort();
-
-                const videoWindow = new VideoWindow(
-                    this.clientSideMouse,
-                    this.simulateTouchpad,
-                    this.naturalTouchScrolling,
-                    this.viewOnly,
-                    this.mouseSensitivity,
-                    this.virtualMouseX,
-                    this.virtualMouseY,
-                );
-                videoWindow.startStreaming(address, password, false);
-                this.inner.replaceWith(videoWindow.inner);
+                const url = new URL(window.location.href);
+                url.searchParams.set("reconnect", "");
+                window.location.href = url.toString();
             }
-        }, { signal: this.abortController.signal });
+        });
 
         if (!this.viewOnly) {
             this.orderedChannel = this.conn.createDataChannel("ordered-input", {
@@ -330,56 +314,30 @@ class VideoWindow {
                                     await this.canvas.requestPointerLock();
                                 }
                             }
-                        }, { signal: this.abortController.signal });
+                        });
                     } else {
                         if (this.simulateTouchpad) {
                             this.mouseImage = new Image();
                             this.mouseImage.src = "mouse.png";
                             this.mouseImage.onload = this.drawVirtualMouse.bind(this);
                         }
-                        document.addEventListener("contextmenu", event => event.preventDefault(), { signal: this.abortController.signal });
+                        document.addEventListener("contextmenu", event => event.preventDefault());
                     }
-                    this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this), { signal: this.abortController.signal });
-                    this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this), { signal: this.abortController.signal });
-                    this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this), { signal: this.abortController.signal });
-                    document.addEventListener("wheel", this.handleWheel.bind(this), {
-                        passive: false,
-                        signal: this.abortController.signal,
-                    });
-                    document.addEventListener("keydown", this.handleKeyDown.bind(this), {
-                        passive: false,
-                        signal: this.abortController.signal,
-                    });
-                    document.addEventListener("keyup", this.handleKeyUp.bind(this), {
-                        passive: false,
-                        signal: this.abortController.signal,
-                    });
-                    this.canvas.addEventListener("touchstart", event => event.preventDefault(), {
-                        passive: false,
-                        signal: this.abortController.signal,
-                    });
-                    this.canvas.addEventListener("touchend", event => event.preventDefault(), {
-                        passive: false,
-                        signal: this.abortController.signal,
-                    });
-                    this.canvas.addEventListener("touchmove", event => event.preventDefault(), {
-                        passive: false,
-                        signal: this.abortController.signal,
-                    });
-                    this.canvas.addEventListener("pointerdown", this.handlePointerDown.bind(this), {
-                        signal: this.abortController.signal,
-                    });
-                    this.canvas.addEventListener("pointerup", this.handlePointerUp.bind(this), {
-                        signal: this.abortController.signal,
-                    });
-                    this.canvas.addEventListener("pointercancel", this.handlePointerUp.bind(this), {
-                        signal: this.abortController.signal,
-                    });
-                    this.canvas.addEventListener("pointermove", this.handlePointerMove.bind(this), {
-                        signal: this.abortController.signal,
-                    });
+                    this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this));
+                    this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this));
+                    this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this));
+                    document.addEventListener("wheel", this.handleWheel.bind(this), { passive: false });
+                    document.addEventListener("keydown", this.handleKeyDown.bind(this), { passive: false });
+                    document.addEventListener("keyup", this.handleKeyUp.bind(this), { passive: false });
+                    this.canvas.addEventListener("touchstart", event => event.preventDefault(), { passive: false });
+                    this.canvas.addEventListener("touchend", event => event.preventDefault(), { passive: false });
+                    this.canvas.addEventListener("touchmove", event => event.preventDefault(), { passive: false });
+                    this.canvas.addEventListener("pointerdown", this.handlePointerDown.bind(this));
+                    this.canvas.addEventListener("pointerup", this.handlePointerUp.bind(this));
+                    this.canvas.addEventListener("pointercancel", this.handlePointerUp.bind(this));
+                    this.canvas.addEventListener("pointermove", this.handlePointerMove.bind(this));
                 }
-                window.addEventListener("resize", this.handleResize.bind(this), { signal: this.abortController.signal });
+                window.addEventListener("resize", this.handleResize.bind(this));
 
                 this.video.style.minWidth = "0";
                 this.video.style.flex = "1";
@@ -408,7 +366,7 @@ class VideoWindow {
                 this.audio.srcObject = event.streams[0];
                 this.audio.play(); // Autoplay is buggy
             }
-        }, { signal: this.abortController.signal });
+        });
 
         this.conn.addEventListener("icecandidate", async event => {
             if (!event.candidate) {
@@ -443,7 +401,7 @@ class VideoWindow {
                     window.location.reload();
                 }
             }
-        }, { signal: this.abortController.signal });
+        });
 
         // Offer to receive a video track and an audio track
         this.conn.addTransceiver("video", { direction: "recvonly" });
@@ -923,5 +881,22 @@ class VideoWindow {
     }
 }
 
-const setupWindow = new SetupWindow();
-document.body.appendChild(setupWindow.inner);
+const url = new URL(window.location.href);
+if (url.searchParams.has("reconnect")) {
+    const videoWindow = new VideoWindow(
+        localStorage.getItem("client_side_mouse") === "true",
+        localStorage.getItem("simulate_touchpad") === "true",
+        localStorage.getItem("natural_touch_scrolling") === "true",
+        localStorage.getItem("view_only") === "true",
+        parseFloat(localStorage.getItem("sensitivity")),
+    );
+    videoWindow.startStreaming(
+        localStorage.getItem("address"),
+        localStorage.getItem("password"),
+        localStorage.getItem("tcp_connectivity") === "true",
+    );
+    document.body.appendChild(videoWindow.inner);
+} else {
+    const setupWindow = new SetupWindow();
+    document.body.appendChild(setupWindow.inner);
+}
