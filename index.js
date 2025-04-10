@@ -187,7 +187,7 @@ class SetupWindow {
         this.naturalTouchScrollingCheckbox.checked = localStorage.getItem("natural_touch_scrolling") === "true";
         this.viewOnlyCheckbox.checked = localStorage.getItem("view_only") === "true";
         this.tcpConnectivityCheckbox.checked = localStorage.getItem("tcp_connectivity") === "true";
-        this.mouseSensitivityRange.value = localStorage.getItem("sensitivity");
+        this.mouseSensitivityRange.value = parseFloat(localStorage.getItem("sensitivity"));
     }
 
     handleSubmit(event) {
@@ -200,7 +200,7 @@ class SetupWindow {
         localStorage.setItem("natural_touch_scrolling", this.naturalTouchScrollingCheckbox.checked.toString());
         localStorage.setItem("view_only", this.viewOnlyCheckbox.checked.toString());
         localStorage.setItem("tcp_connectivity", this.tcpConnectivityCheckbox.checked.toString());
-        localStorage.setItem("sensitivity", this.mouseSensitivityRange.value);
+        localStorage.setItem("sensitivity", this.mouseSensitivityRange.value.toString());
 
         const videoWindow = new VideoWindow(
             this.clientSideMouseCheckbox.checked,
