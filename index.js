@@ -1,6 +1,6 @@
 window.onerror = (message, source, lineno, colno, error) => {
     alert(`An error occured at ${lineno}:${colno}: ${message}`);
-    window.location.reload();
+    window.location.href = window.location.origin + window.location.pathname;
     return false;
 }
 
@@ -382,7 +382,7 @@ class VideoWindow {
                     }),
                 }).catch(e => {
                     alert(`Error: ${e}`);
-                    window.location.reload();
+                    window.location.href = window.location.origin + window.location.pathname;
                 });
 
                 if (resp.status === 200) {
@@ -394,11 +394,11 @@ class VideoWindow {
                         this.conn.setRemoteDescription(new RTCSessionDescription(desc));
                     } catch (e) {
                         alert(`Error: ${e}`);
-                        window.location.reload();
+                        window.location.href = window.location.origin + window.location.pathname;
                     }
                 } else {
                     alert(`Error: ${(await resp.json()).Error}`);
-                    window.location.reload();
+                    window.location.href = window.location.origin + window.location.pathname;
                 }
             }
         });
