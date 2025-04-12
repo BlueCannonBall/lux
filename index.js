@@ -467,6 +467,7 @@ class VideoWindow {
             this.ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
             this.ctx.lineWidth = 2;
             this.ctx.lineCap = "round";
+            this.ctx.lineJoin = "round";
             this.ctx.beginPath();
             this.ctx.moveTo(this.currentPenStroke[0].x, this.currentPenStroke[0].y);
             for (let i = 1; i < this.currentPenStroke.length; ++i) {
