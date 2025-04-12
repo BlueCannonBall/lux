@@ -887,7 +887,7 @@ class VideoWindow {
         } else if (event.pointerType === "pen") {
             this.clearTouches(false);
 
-            if (this.currentPenStroke.length === 30) {
+            if (this.currentPenStroke.length === 40) {
                 this.currentPenStroke.shift();
             }
             this.currentPenStroke.push({ x: event.clientX, y: event.clientY });
