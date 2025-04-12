@@ -240,6 +240,8 @@ class VideoWindow {
         this.touches = [];
         this.lastRightClickTime = 0;
 
+        this.currentPenStroke = [];
+
         this.inner.style.width = "100%";
         this.inner.style.height = "100%";
         this.inner.style.display = "flex";
@@ -319,7 +321,7 @@ class VideoWindow {
                         if (this.simulateTouchpad) {
                             this.mouseImage = new Image();
                             this.mouseImage.src = "mouse.png";
-                            this.mouseImage.onload = this.drawVirtualMouse.bind(this);
+                            this.mouseImage.onload = this.draw.bind(this);
                         }
                         document.addEventListener("contextmenu", event => event.preventDefault());
                     }
@@ -452,22 +454,43 @@ class VideoWindow {
     moveVirtualMouse(x, y) {
         this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), this.canvas.clientWidth - 1);
         this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), this.canvas.clientHeight - 1);
-        if (this.mouseImage.complete) this.drawVirtualMouse();
+        this.draw();
     }
 
-    drawVirtualMouse() {
+    draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
-        this.ctx.shadowBlur = 2.5 * window.devicePixelRatio;
-        this.ctx.shadowOffsetX = 1.5 * window.devicePixelRatio;
-        this.ctx.shadowOffsetY = 1.5 * window.devicePixelRatio;
-        this.ctx.drawImage(
-            this.mouseImage,
-            Math.round(this.virtualMouseX * window.devicePixelRatio),
-            Math.round(this.virtualMouseY * window.devicePixelRatio),
-            Math.round(this.mouseImage.width / 40 * window.devicePixelRatio),
-            Math.round(this.mouseImage.height / 40 * window.devicePixelRatio),
-        );
+
+        // Draw pen stroke
+        if (this.currentPenStroke.length) {
+            this.ctx.save();
+            this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            this.ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.currentPenStroke[0].x, this.currentPenStroke[0].y);
+            for (let i = 1; i < this.currentPenStroke.length; ++i) {
+                this.ctx.lineTo(this.currentPenStroke[i].x, this.currentPenStroke[i].y);
+            }
+            this.ctx.stroke();
+            this.ctx.restore();
+        }
+
+        // Draw mouse
+        if (this.clientSideMouse && this.simulateTouchpad && this.mouseImage.complete) {
+            this.ctx.save();
+            this.ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+            this.ctx.shadowBlur = 2.5 * window.devicePixelRatio;
+            this.ctx.shadowOffsetX = 1.5 * window.devicePixelRatio;
+            this.ctx.shadowOffsetY = 1.5 * window.devicePixelRatio;
+            this.ctx.drawImage(
+                this.mouseImage,
+                Math.round(this.virtualMouseX * window.devicePixelRatio),
+                Math.round(this.virtualMouseY * window.devicePixelRatio),
+                Math.round(this.mouseImage.width / 40 * window.devicePixelRatio),
+                Math.round(this.mouseImage.height / 40 * window.devicePixelRatio),
+            );
+            this.ctx.restore();
+        }
     }
 
     pushTouch(touch) {
@@ -707,7 +730,7 @@ class VideoWindow {
 
     handleTouchMove(movedTouches) {
         movedTouches = movedTouches.filter(movedTouch => this.touches.some(touch => touch.id === movedTouch.id));
-        if (movedTouches.length === 0) return;
+        if (!movedTouches.length) return;
 
         if (this.simulateTouchpad) {
             switch (this.touches.length) {
@@ -806,6 +829,9 @@ class VideoWindow {
         } else if (event.pointerType === "pen") {
             this.clearTouches();
 
+            this.currentPenStroke.push({ x: event.clientX, y: event.clientY });
+            this.draw();
+
             const message = {
                 type: "pen",
                 ...this.positionInVideo(event.clientX, event.clientY),
@@ -830,6 +856,9 @@ class VideoWindow {
                 radiusY: event.height / 2,
             }]);
         } else if (event.pointerType === "pen") {
+            this.currentPenStroke = [];
+            this.draw();
+
             const message = {
                 type: "pen",
                 ...this.positionInVideo(event.clientX, event.clientY),
@@ -856,6 +885,12 @@ class VideoWindow {
         } else if (event.pointerType === "pen") {
             this.clearTouches(false);
 
+            if (this.currentPenStroke.length === 30) {
+                this.currentPenStroke.shift();
+            }
+            this.currentPenStroke.push({ x: event.clientX, y: event.clientY });
+            this.draw();
+
             const message = {
                 type: "pen",
                 ...this.positionInVideo(event.clientX, event.clientY),
@@ -873,10 +908,13 @@ class VideoWindow {
     handleResize() {
         this.canvas.width = this.canvas.clientWidth * window.devicePixelRatio;
         this.canvas.height = this.canvas.clientHeight * window.devicePixelRatio;
-        if (!this.viewOnly && this.clientSideMouse && this.simulateTouchpad) {
-            this.virtualMouseX = Math.min(this.virtualMouseX, this.canvas.clientWidth - 1);
-            this.virtualMouseY = Math.min(this.virtualMouseY, this.canvas.clientHeight - 1);
-            this.drawVirtualMouse();
+
+        if (!this.viewOnly) {
+            if (this.clientSideMouse && this.simulateTouchpad) {
+                this.virtualMouseX = Math.min(this.virtualMouseX, this.canvas.clientWidth - 1);
+                this.virtualMouseY = Math.min(this.virtualMouseY, this.canvas.clientHeight - 1);
+            }
+            this.draw();
         }
     }
 }
