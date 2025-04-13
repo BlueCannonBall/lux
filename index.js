@@ -469,7 +469,7 @@ class VideoWindow {
         if (this.currentPenStroke.length) {
             this.ctx.save();
             this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            this.ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
+            this.ctx.strokeStyle = "rgba(0, 0, 0, 0.4)";
             this.ctx.lineWidth = 2;
             this.ctx.lineCap = "round";
             this.ctx.lineJoin = "round";
@@ -485,7 +485,7 @@ class VideoWindow {
         // Draw mouse
         if (this.clientSideMouse && this.simulateTouchpad && this.mouseImage.complete) {
             this.ctx.save();
-            this.ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+            this.ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
             this.ctx.shadowBlur = 2.5 * window.devicePixelRatio;
             this.ctx.shadowOffsetX = 1.5 * window.devicePixelRatio;
             this.ctx.shadowOffsetY = 1.5 * window.devicePixelRatio;
