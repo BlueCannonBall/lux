@@ -469,7 +469,7 @@ class VideoWindow {
         if (this.currentPenStroke.length) {
             this.ctx.save();
             this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            this.ctx.strokeStyle = "rgba(0, 0, 0, 0.4)";
+            this.ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
             this.ctx.lineWidth = 2;
             this.ctx.lineCap = "round";
             this.ctx.lineJoin = "round";
