@@ -831,9 +831,9 @@ class VideoWindow {
         } else if (event.pointerType === "pen") {
             this.clearTouches();
 
-            this.currentPenStroke.push({ x: event.clientX, y: event.clientY });
-            this.draw();
-
+            // Pen input on iOS is ASTOUNDINGLY BROKEN!
+            // Safari gives you TWO of every pen-related event, so they must be deduplicated
+            // MANY SUCH CASES - see comments in Tenebra's input code
             const message = {
                 type: "pen",
                 ...this.positionInVideo(event.clientX, event.clientY),
@@ -841,9 +841,12 @@ class VideoWindow {
                 tiltX: Math.round(event.tiltX),
                 tiltY: Math.round(event.tiltY),
             };
-            if (!shallowEqual(message, this.lastPenMessage)) { // Pen input on iOS is ASTOUNDINGLY BROKEN!
-                this.sendOrdered(message);                     // Safari gives you TWO of every pen-related event
-                this.lastPenMessage = message;                 // MANY SUCH CASES! See comments in Tenebra's input code
+            if (!shallowEqual(message, this.lastPenMessage)) {
+                this.currentPenStroke = [{ x: event.clientX, y: event.clientY }];
+                this.draw();
+
+                this.sendOrdered(message);
+                this.lastPenMessage = message;
             }
         }
     }
@@ -858,9 +861,6 @@ class VideoWindow {
                 radiusY: event.height / 2,
             }]);
         } else if (event.pointerType === "pen") {
-            this.currentPenStroke = [];
-            this.draw();
-
             const message = {
                 type: "pen",
                 ...this.positionInVideo(event.clientX, event.clientY),
@@ -869,6 +869,9 @@ class VideoWindow {
                 tiltY: Math.round(event.tiltY),
             };
             if (!shallowEqual(message, this.lastPenMessage)) {
+                this.currentPenStroke = [];
+                this.draw();
+
                 this.sendOrdered(message);
                 this.lastPenMessage = message;
             }
@@ -887,12 +890,6 @@ class VideoWindow {
         } else if (event.pointerType === "pen") {
             this.clearTouches(false);
 
-            if (this.currentPenStroke.length === 40) {
-                this.currentPenStroke.shift();
-            }
-            this.currentPenStroke.push({ x: event.clientX, y: event.clientY });
-            this.draw();
-
             const message = {
                 type: "pen",
                 ...this.positionInVideo(event.clientX, event.clientY),
@@ -901,6 +898,12 @@ class VideoWindow {
                 tiltY: Math.round(event.tiltY),
             };
             if (!shallowEqual(message, this.lastPenMessage)) {
+                if (this.currentPenStroke.length === 20) {
+                    this.currentPenStroke.shift();
+                }
+                this.currentPenStroke.push({ x: event.clientX, y: event.clientY });
+                this.draw();
+
                 this.sendOrdered(message);
                 this.lastPenMessage = message;
             }
