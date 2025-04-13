@@ -485,7 +485,7 @@ class VideoWindow {
         // Draw mouse
         if (this.clientSideMouse && this.simulateTouchpad && this.mouseImage.complete) {
             this.ctx.save();
-            this.ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+            this.ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
             this.ctx.shadowBlur = 2.5 * window.devicePixelRatio;
             this.ctx.shadowOffsetX = 1.5 * window.devicePixelRatio;
             this.ctx.shadowOffsetY = 1.5 * window.devicePixelRatio;
