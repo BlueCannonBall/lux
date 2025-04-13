@@ -848,7 +848,6 @@ class VideoWindow {
             };
             if (!shallowEqual(message, this.lastPenMessage)) {
                 this.currentPenStroke = [{ x: event.clientX, y: event.clientY }];
-                this.draw();
 
                 this.sendOrdered(message);
                 this.lastPenMessage = message;
