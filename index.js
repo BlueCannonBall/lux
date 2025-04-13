@@ -162,13 +162,18 @@ class SetupWindow {
         this.submitButton.innerText = "Login";
         this.inner.appendChild(this.submitButton);
 
-        this.windowSizeLabel = document.createElement("p");
-        this.windowSizeLabel.innerText = `${window.innerWidth}x${window.innerHeight}`;
-        this.inner.appendChild(this.windowSizeLabel);
+        // this.windowSizeLabel = document.createElement("p");
+        // this.windowSizeLabel.innerText = `${window.innerWidth}x${window.innerHeight}`;
+        // this.inner.appendChild(this.windowSizeLabel);
 
         this.inner.addEventListener("submit", this.handleSubmit.bind(this), {
             passive: false,
         });
+
+        this.carbonLabel = document.createElement("p");
+        this.carbonLabel.style.textAlign = "center";
+        this.carbonLabel.innerHTML = "<i class=\"fas fa-leaf\" style=\"color: #32a852;\"></i> <strong>Tenebra is <a href=\"https://github.com/UE2020/tenebra?tab=readme-ov-file#using-hardware-accelerated-encoding-macos--linux-only\">committed</a> to curbing carbon emissions.</strong>";
+        this.inner.appendChild(this.carbonLabel);
 
         this.inner.style.boxSizing = "border-box";
         this.inner.style.width = "100%";
