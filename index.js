@@ -468,17 +468,25 @@ class VideoWindow {
         // Draw pen stroke
         if (this.currentPenStroke.length) {
             this.ctx.save();
+
             this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
             this.ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
             this.ctx.lineWidth = 2;
             this.ctx.lineCap = "round";
             this.ctx.lineJoin = "round";
+
+            const now = Date.now();
             this.ctx.beginPath();
             this.ctx.moveTo(this.currentPenStroke[0].x, this.currentPenStroke[0].y);
             for (let i = 1; i < this.currentPenStroke.length; ++i) {
-                this.ctx.lineTo(this.currentPenStroke[i].x, this.currentPenStroke[i].y);
+                if (now - this.currentPenStroke[i - 1].time > 1000 / 60 * 20) {
+                    this.ctx.moveTo(this.currentPenStroke[i].x, this.currentPenStroke[i].y);
+                } else {
+                    this.ctx.lineTo(this.currentPenStroke[i].x, this.currentPenStroke[i].y);
+                }
             }
             this.ctx.stroke();
+
             this.ctx.restore();
         }
 
@@ -847,7 +855,7 @@ class VideoWindow {
                 tiltY: Math.round(event.tiltY),
             };
             if (!shallowEqual(message, this.lastPenMessage)) {
-                this.currentPenStroke = [{ x: event.clientX, y: event.clientY }];
+                this.currentPenStroke = [{ x: event.clientX, y: event.clientY, time: Date.now() }];
 
                 this.sendOrdered(message);
                 this.lastPenMessage = message;
@@ -902,13 +910,20 @@ class VideoWindow {
                 tiltY: Math.round(event.tiltY),
             };
             if (!shallowEqual(message, this.lastPenMessage)) {
-                if (this.currentPenStroke.length === 20) {
-                    this.currentPenStroke.shift();
-                }
-                this.currentPenStroke.push({ x: event.clientX, y: event.clientY });
-                this.draw();
+                const now = Date.now();
+                for (const coalescedEvent of event.getCoalescedEvents()) {
+                    this.currentPenStroke.push({ x: coalescedEvent.clientX, y: coalescedEvent.clientY, time: now });
 
-                this.sendOrdered(message);
+                    const coalescedMessage = {
+                        type: "pen",
+                        ...this.positionInVideo(coalescedEvent.clientX, coalescedEvent.clientY),
+                        pressure: Math.max(coalescedEvent.pressure, 0.001),
+                        tiltX: Math.round(coalescedEvent.tiltX),
+                        tiltY: Math.round(coalescedEvent.tiltY),
+                    };
+                    this.sendOrdered(coalescedMessage);
+                }
+                this.draw();
                 this.lastPenMessage = message;
             }
         }
