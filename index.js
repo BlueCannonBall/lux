@@ -466,7 +466,7 @@ class VideoWindow {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         // Draw pen stroke
-        if (this.currentPenStroke.length) {
+        if (this.currentPenStroke.length >= 2) {
             this.ctx.save();
             this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
             this.ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
@@ -926,9 +926,11 @@ class VideoWindow {
                         this.currentPenStroke.shift();
                     }
                     this.currentPenStroke.push({ x: event.clientX, y: event.clientY, time: now });
+
                     this.sendOrdered(message);
                 }
                 this.draw();
+
                 this.lastPenMessage = message;
             }
         }
