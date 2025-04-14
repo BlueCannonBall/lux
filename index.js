@@ -468,25 +468,17 @@ class VideoWindow {
         // Draw pen stroke
         if (this.currentPenStroke.length) {
             this.ctx.save();
-
             this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
             this.ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
             this.ctx.lineWidth = 2;
             this.ctx.lineCap = "round";
             this.ctx.lineJoin = "round";
-
-            const now = Date.now();
             this.ctx.beginPath();
             this.ctx.moveTo(this.currentPenStroke[0].x, this.currentPenStroke[0].y);
             for (let i = 1; i < this.currentPenStroke.length; ++i) {
-                if (now - this.currentPenStroke[i - 1].time > 1000 / 60 * 20) {
-                    this.ctx.moveTo(this.currentPenStroke[i].x, this.currentPenStroke[i].y);
-                } else {
-                    this.ctx.lineTo(this.currentPenStroke[i].x, this.currentPenStroke[i].y);
-                }
+                this.ctx.lineTo(this.currentPenStroke[i].x, this.currentPenStroke[i].y);
             }
             this.ctx.stroke();
-
             this.ctx.restore();
         }
 
@@ -637,13 +629,14 @@ class VideoWindow {
         } else {
             for (const touch of newTouches) {
                 if (touch.radiusX <= 75 && touch.radiusY <= 75) {
+                    this.pushTouch(touch);
+
                     const message = {
                         type: "touchstart",
                         id: Math.abs(touch.id) % 10,
                         ...this.positionInVideo(touch.clientX, touch.clientY),
                     };
                     this.sendOrdered(message);
-                    this.pushTouch(touch);
                 }
             }
         }
@@ -656,8 +649,8 @@ class VideoWindow {
         if (this.simulateTouchpad) {
             switch (this.touches.length) {
                 case 1: {
-                    if (Date.now() - this.lastRightClickTime > 125 &&
-                        Date.now() - this.touches[0].startTime <= 125) {
+                    const now = Date.now();
+                    if (now - this.lastRightClickTime > 125 && now - this.touches[0].startTime <= 125) {
                         if (this.clientSideMouse) {
                             const message = {
                                 type: "mousemoveabs",
@@ -681,7 +674,8 @@ class VideoWindow {
                 }
 
                 case 2: {
-                    if (this.touches.every(touch => Date.now() - touch.startTime <= 250) &&
+                    const now = Date.now();
+                    if (this.touches.every(touch => now - touch.startTime <= 250) &&
                         this.touches.every(
                             touch => distance(
                                 touch.clientX,
@@ -712,7 +706,7 @@ class VideoWindow {
                         message.type = "mouseup";
                         this.sendOrdered(message);
 
-                        this.lastRightClickTime = Date.now();
+                        this.lastRightClickTime = now;
                     }
                     break;
                 }
@@ -772,8 +766,8 @@ class VideoWindow {
                 }
 
                 case 2: {
-                    if (movedTouches[0].id === this.touches[0].id &&
-                        this.touches.every(touch => Date.now() - touch.startTime >= 25)) {
+                    const now = Date.now();
+                    if (movedTouches[0].id === this.touches[0].id && this.touches.every(touch => now - touch.startTime >= 25)) {
                         const message = {
                             type: "wheel",
                             x: Math.round(movedTouches[0].clientX - this.touches[0].clientX) * (this.naturalTouchScrolling ? -1 : 1) * 8,
@@ -910,9 +904,12 @@ class VideoWindow {
                 tiltY: Math.round(event.tiltY),
             };
             if (!shallowEqual(message, this.lastPenMessage)) {
+                const now = Date.now();
                 if (event.getCoalescedEvents) {
-                    const now = Date.now();
                     for (const coalescedEvent of event.getCoalescedEvents()) {
+                        if (now - this.currentPenStroke[0].time > 1000 / 60 * 20) {
+                            this.currentPenStroke.shift();
+                        }
                         this.currentPenStroke.push({ x: coalescedEvent.clientX, y: coalescedEvent.clientY, time: now });
 
                         const coalescedMessage = {
@@ -925,7 +922,10 @@ class VideoWindow {
                         this.sendOrdered(coalescedMessage);
                     }
                 } else {
-                    this.currentPenStroke.push({ x: event.clientX, y: event.clientY, time: Date.now() });
+                    if (now - this.currentPenStroke[0].time > 1000 / 60 * 20) {
+                        this.currentPenStroke.shift();
+                    }
+                    this.currentPenStroke.push({ x: event.clientX, y: event.clientY, time: now });
                     this.sendOrdered(message);
                 }
                 this.draw();
