@@ -910,18 +910,23 @@ class VideoWindow {
                 tiltY: Math.round(event.tiltY),
             };
             if (!shallowEqual(message, this.lastPenMessage)) {
-                const now = Date.now();
-                for (const coalescedEvent of event.getCoalescedEvents()) {
-                    this.currentPenStroke.push({ x: coalescedEvent.clientX, y: coalescedEvent.clientY, time: now });
+                if (event.getCoalescedEvents) {
+                    const now = Date.now();
+                    for (const coalescedEvent of event.getCoalescedEvents()) {
+                        this.currentPenStroke.push({ x: coalescedEvent.clientX, y: coalescedEvent.clientY, time: now });
 
-                    const coalescedMessage = {
-                        type: "pen",
-                        ...this.positionInVideo(coalescedEvent.clientX, coalescedEvent.clientY),
-                        pressure: Math.max(coalescedEvent.pressure, 0.001),
-                        tiltX: Math.round(coalescedEvent.tiltX),
-                        tiltY: Math.round(coalescedEvent.tiltY),
-                    };
-                    this.sendOrdered(coalescedMessage);
+                        const coalescedMessage = {
+                            type: "pen",
+                            ...this.positionInVideo(coalescedEvent.clientX, coalescedEvent.clientY),
+                            pressure: Math.max(coalescedEvent.pressure, 0.001),
+                            tiltX: Math.round(coalescedEvent.tiltX),
+                            tiltY: Math.round(coalescedEvent.tiltY),
+                        };
+                        this.sendOrdered(coalescedMessage);
+                    }
+                } else {
+                    this.currentPenStroke.push({ x: event.clientX, y: event.clientY, time: Date.now() });
+                    this.sendOrdered(message);
                 }
                 this.draw();
                 this.lastPenMessage = message;
