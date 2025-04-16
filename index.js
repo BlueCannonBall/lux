@@ -239,8 +239,8 @@ class VideoWindow {
         this.viewOnly = viewOnly;
         this.mouseSensitivity = mouseSensitivity;
 
-        this.virtualMouseX = 0
-        this.virtualMouseY = 0;
+        this.virtualMouseX = window.innerWidth / 2;
+        this.virtualMouseY = window.innerHeight / 2;
 
         this.touches = [];
         this.lastRightClickTime = 0;
