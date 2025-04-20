@@ -602,7 +602,7 @@ class VideoWindow {
     handleTouchStart(newTouches) {
         if (this.simulateTouchpad) {
             for (const touch of newTouches) {
-                if (touch.radiusX <= 75 && touch.radiusY <= 75) {
+                if (touch.radiusX <= 60 && touch.radiusY <= 60) {
                     this.pushTouch(touch);
                 }
             }
