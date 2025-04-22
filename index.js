@@ -4,6 +4,8 @@ window.onerror = (message, source, lineno, colno, error) => {
     return false;
 }
 
+const url = new URL(window.location.href);
+
 function shallowEqual(a, b) {
     if (a === b) return true;
     if (a == null || b == null) return false;
@@ -130,32 +132,52 @@ class SetupWindow {
         this.addressInput = document.createElement("input");
         this.addressInput.type = "text";
         this.addressInput.placeholder = "Address";
+        if (!url.searchParams.has("address")) {
+            this.addressInput.value = localStorage.getItem("address");
+        } else {
+            this.addressInput.value = url.searchParams.get("address");
+            this.addressInput.disabled = true;
+        }
         this.inner.appendChild(this.addressInput);
 
-        this.passwordInput = document.createElement("input");
-        this.passwordInput.type = "password";
-        this.passwordInput.autocomplete = "current-password";
-        this.passwordInput.placeholder = "Password";
-        this.inner.appendChild(this.passwordInput);
+        if (!url.searchParams.has("key")) {
+            this.passwordInput = document.createElement("input");
+            this.passwordInput.type = "password";
+            this.passwordInput.autocomplete = "current-password";
+            this.passwordInput.placeholder = "Password";
+            this.passwordInput.value = localStorage.getItem("password");
+            this.inner.appendChild(this.passwordInput);
+        }
 
-        this.clientSideMouseCheckbox = new Checkbox("Client-side mouse");
-        this.inner.appendChild(this.clientSideMouseCheckbox.inner);
+        if (url.searchParams.get("view_only") !== "true") {
+            this.clientSideMouseCheckbox = new Checkbox("Client-side mouse");
+            this.clientSideMouseCheckbox.checked = localStorage.getItem("client_side_mouse") === "true";
+            this.inner.appendChild(this.clientSideMouseCheckbox.inner);
 
-        this.simulateTouchpadCheckbox = new Checkbox("Simulate touchpad");
-        this.simulateTouchpadCheckbox.disabled = !navigator.maxTouchPoints;
-        this.inner.appendChild(this.simulateTouchpadCheckbox.inner);
+            this.simulateTouchpadCheckbox = new Checkbox("Simulate touchpad");
+            this.simulateTouchpadCheckbox.checked = navigator.maxTouchPoints && localStorage.getItem("simulate_touchpad") === "true";
+            this.simulateTouchpadCheckbox.disabled = !navigator.maxTouchPoints;
+            this.inner.appendChild(this.simulateTouchpadCheckbox.inner);
 
-        this.naturalTouchScrollingCheckbox = new Checkbox("Natural touch scrolling");
-        this.inner.appendChild(this.naturalTouchScrollingCheckbox.inner);
+            this.naturalTouchScrollingCheckbox = new Checkbox("Natural touch scrolling");
+            this.naturalTouchScrollingCheckbox.checked = navigator.maxTouchPoints && localStorage.getItem("natural_touch_scrolling") === "true";
+            this.naturalTouchScrollingCheckbox.disabled = !navigator.maxTouchPoints;
+            this.inner.appendChild(this.naturalTouchScrollingCheckbox.inner);
 
-        this.viewOnlyCheckbox = new Checkbox("View only");
-        this.inner.appendChild(this.viewOnlyCheckbox.inner);
+            this.viewOnlyCheckbox = new Checkbox("View only");
+            this.viewOnlyCheckbox.checked = localStorage.getItem("view_only") === "true";
+            this.inner.appendChild(this.viewOnlyCheckbox.inner);
+        }
 
         this.tcpConnectivityCheckbox = new Checkbox("TCP connectivity");
+        this.tcpConnectivityCheckbox.checked = localStorage.getItem("tcp_connectivity") === "true";
         this.inner.appendChild(this.tcpConnectivityCheckbox.inner);
 
-        this.mouseSensitivityRange = new Range("Mouse sensitivity:", 0.1, 2.9, 1.5, 0.1);
-        this.inner.appendChild(this.mouseSensitivityRange.inner);
+        if (url.searchParams.get("view_only") !== "true") {
+            this.mouseSensitivityRange = new Range("Mouse sensitivity:", 0.1, 2.9, 1.5, 0.1);
+            this.mouseSensitivityRange.value = parseFloat(localStorage.getItem("sensitivity"));
+            this.inner.appendChild(this.mouseSensitivityRange.inner);
+        }
 
         this.submitButton = document.createElement("button");
         this.submitButton.type = "submit";
@@ -185,38 +207,34 @@ class SetupWindow {
         this.inner.style.flexDirection = "column";
         this.inner.style.justifyContent = "center";
 
-        this.addressInput.value = localStorage.getItem("address");
-        this.passwordInput.value = localStorage.getItem("password");
-        this.clientSideMouseCheckbox.checked = localStorage.getItem("client_side_mouse") === "true";
-        this.simulateTouchpadCheckbox.checked = localStorage.getItem("simulate_touchpad") === "true";
-        this.naturalTouchScrollingCheckbox.checked = localStorage.getItem("natural_touch_scrolling") === "true";
-        this.viewOnlyCheckbox.checked = localStorage.getItem("view_only") === "true";
-        this.tcpConnectivityCheckbox.checked = localStorage.getItem("tcp_connectivity") === "true";
-        this.mouseSensitivityRange.value = parseFloat(localStorage.getItem("sensitivity"));
     }
 
     handleSubmit(event) {
         event.preventDefault();
 
-        localStorage.setItem("address", this.addressInput.value);
-        localStorage.setItem("password", this.passwordInput.value);
-        localStorage.setItem("client_side_mouse", this.clientSideMouseCheckbox.checked.toString());
-        localStorage.setItem("simulate_touchpad", this.simulateTouchpadCheckbox.checked.toString());
-        localStorage.setItem("natural_touch_scrolling", this.naturalTouchScrollingCheckbox.checked.toString());
-        localStorage.setItem("view_only", this.viewOnlyCheckbox.checked.toString());
+        if (!url.searchParams.has("key")) {
+            localStorage.setItem("address", this.addressInput.value);
+            localStorage.setItem("password", this.passwordInput.value);
+        }
+        if (url.searchParams.get("view_only") !== "true") {
+            localStorage.setItem("client_side_mouse", this.clientSideMouseCheckbox.checked.toString());
+            localStorage.setItem("simulate_touchpad", this.simulateTouchpadCheckbox.checked.toString());
+            localStorage.setItem("natural_touch_scrolling", this.naturalTouchScrollingCheckbox.checked.toString());
+            localStorage.setItem("view_only", this.viewOnlyCheckbox.checked.toString());
+            localStorage.setItem("sensitivity", this.mouseSensitivityRange.value.toString());
+        }
         localStorage.setItem("tcp_connectivity", this.tcpConnectivityCheckbox.checked.toString());
-        localStorage.setItem("sensitivity", this.mouseSensitivityRange.value.toString());
 
         const videoWindow = new VideoWindow(
-            this.clientSideMouseCheckbox.checked,
-            this.simulateTouchpadCheckbox.checked,
-            this.naturalTouchScrollingCheckbox.checked,
-            this.viewOnlyCheckbox.checked,
-            this.mouseSensitivityRange.value,
+            this.clientSideMouseCheckbox?.checked,
+            this.simulateTouchpadCheckbox?.checked,
+            this.naturalTouchScrollingCheckbox?.checked,
+            url.searchParams.get("view_only") === "true" || this.viewOnlyCheckbox.checked,
+            this.mouseSensitivityRange?.value,
         );
         videoWindow.startStreaming(
             this.addressInput.value,
-            this.passwordInput.value,
+            this.passwordInput?.value,
             this.tcpConnectivityCheckbox.checked,
         );
         this.inner.replaceWith(videoWindow.inner);
@@ -282,9 +300,13 @@ class VideoWindow {
             if (this.conn.iceConnectionState === "closed" ||
                 this.conn.iceConnectionState === "failed" ||
                 this.conn.iceConnectionState === "disconnected") {
-                const url = new URL(window.location.href);
-                url.searchParams.set("reconnect", "true");
-                window.location.href = url.toString();
+                if (!url.searchParams.has("key")) {
+                    url.searchParams.set("reconnect", "true");
+                    window.location.href = url.toString();
+                } else {
+                    alert("The connection has closed.");
+                    window.location.href = window.location.origin + window.location.pathname;
+                }
             }
         });
 
@@ -382,8 +404,12 @@ class VideoWindow {
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({
+                    body: JSON.stringify(!url.searchParams.has("key") ? {
                         password,
+                        show_mouse: !this.clientSideMouse || this.viewOnly,
+                        offer: btoa(JSON.stringify(this.conn.localDescription)),
+                    } : {
+                        key: url.searchParams.get("key"),
                         show_mouse: !this.clientSideMouse || this.viewOnly,
                         offer: btoa(JSON.stringify(this.conn.localDescription)),
                     }),
@@ -950,7 +976,6 @@ class VideoWindow {
     }
 }
 
-const url = new URL(window.location.href);
 if (url.searchParams.get("reconnect") === "true") {
     const videoWindow = new VideoWindow(
         localStorage.getItem("client_side_mouse") === "true",
