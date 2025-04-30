@@ -933,7 +933,7 @@ class VideoWindow {
                 const now = Date.now();
                 if (event.getCoalescedEvents) {
                     for (const coalescedEvent of event.getCoalescedEvents()) {
-                        if (now - this.currentPenStroke[0].time > 1000 / 60 * 20) {
+                        if (this.currentPenStroke.length && now - this.currentPenStroke[0].time > 1000 / 60 * 20) {
                             this.currentPenStroke.shift();
                         }
                         this.currentPenStroke.push({ x: coalescedEvent.clientX, y: coalescedEvent.clientY, time: now });
