@@ -875,7 +875,12 @@ class VideoWindow {
                 tiltY: Math.round(event.tiltY),
             };
             if (!shallowEqual(message, this.lastPenMessage)) {
-                this.currentPenStroke = [{ x: event.clientX, y: event.clientY, time: Date.now() }];
+                // Google Chrome is ALSO ASTOUNDINGLY BROKEN!
+                // Chrome often fires pointermove events BEFORE the corresponding pointerdown
+                // As a result, we must check if this.currentPenStroke is already populated before overwriting it
+                if (!this.currentPenStroke.length) {
+                    this.currentPenStroke = [{ x: event.clientX, y: event.clientY, time: Date.now() }];
+                }
 
                 this.sendOrdered(message);
                 this.lastPenMessage = message;
@@ -933,6 +938,7 @@ class VideoWindow {
                 const now = Date.now();
                 if (event.getCoalescedEvents) {
                     for (const coalescedEvent of event.getCoalescedEvents()) {
+                        // Since Chrome is broken, we must ensure that this.currentPenStroke is populated before removing old points
                         if (this.currentPenStroke.length && now - this.currentPenStroke[0].time > 1000 / 60 * 20) {
                             this.currentPenStroke.shift();
                         }
@@ -948,7 +954,7 @@ class VideoWindow {
                         this.sendOrdered(coalescedMessage);
                     }
                 } else {
-                    if (now - this.currentPenStroke[0].time > 1000 / 60 * 20) {
+                    if (this.currentPenStroke.length && now - this.currentPenStroke[0].time > 1000 / 60 * 20) {
                         this.currentPenStroke.shift();
                     }
                     this.currentPenStroke.push({ x: event.clientX, y: event.clientY, time: now });
