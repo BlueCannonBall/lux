@@ -192,11 +192,6 @@ class SetupWindow {
             passive: false,
         });
 
-        this.carbonLabel = document.createElement("p");
-        this.carbonLabel.style.textAlign = "center";
-        this.carbonLabel.innerHTML = "<i class=\"fas fa-leaf\" style=\"color: #32A852;\"></i> <strong>Lux and Tenebra are <a href=\"https://github.com/UE2020/tenebra?tab=readme-ov-file#using-hardware-accelerated-encoding-macos--linux-only\" target=\"_blank\" rel=\"noopener noreferrer\">committed</a> to curbing carbon emissions.</strong>";
-        this.inner.appendChild(this.carbonLabel);
-
         this.inner.style.boxSizing = "border-box";
         this.inner.style.width = "100%";
         this.inner.style.height = "100%";
