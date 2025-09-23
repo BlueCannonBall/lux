@@ -173,6 +173,10 @@ class SetupWindow {
         this.tcpConnectivityCheckbox.checked = localStorage.getItem("tcp_connectivity") === "true";
         this.inner.appendChild(this.tcpConnectivityCheckbox.inner);
 
+        this.lowPowerModeCheckbox = new Checkbox("Low power mode");
+        this.lowPowerModeCheckbox.checked = localStorage.getItem("low_power_mode") === "true";
+        this.inner.appendChild(this.lowPowerModeCheckbox.inner);
+
         if (url.searchParams.get("view_only") !== "true") {
             this.mouseSensitivityRange = new Range("Mouse sensitivity:", 0.1, 2.9, 1.5, 0.1);
             this.mouseSensitivityRange.value = parseFloat(localStorage.getItem("sensitivity"));
@@ -219,6 +223,7 @@ class SetupWindow {
             localStorage.setItem("sensitivity", this.mouseSensitivityRange.value.toString());
         }
         localStorage.setItem("tcp_connectivity", this.tcpConnectivityCheckbox.checked.toString());
+        localStorage.setItem("low_power_mode", this.lowPowerModeCheckbox.checked.toString());
 
         const videoWindow = new VideoWindow(
             this.clientSideMouseCheckbox?.checked,
@@ -231,6 +236,7 @@ class SetupWindow {
             this.addressInput.value,
             this.passwordInput?.value,
             this.tcpConnectivityCheckbox.checked,
+            this.lowPowerModeCheckbox.checked,
         );
         this.inner.replaceWith(videoWindow.inner);
     }
@@ -267,7 +273,7 @@ class VideoWindow {
         this.inner.style.alignItems = "center";
     }
 
-    async startStreaming(address, password, askCamera) {
+    async startStreaming(address, password, askCamera, lowPowerMode = false) {
         this.inner.ariaBusy = true;
         this.inner.innerText = "Connecting...";
 
@@ -402,10 +408,12 @@ class VideoWindow {
                     body: JSON.stringify(!url.searchParams.has("key") ? {
                         password,
                         show_mouse: !this.clientSideMouse || this.viewOnly,
+                        low_power_mode: lowPowerMode,
                         offer: btoa(JSON.stringify(this.conn.localDescription)),
                     } : {
                         key: url.searchParams.get("key"),
                         show_mouse: !this.clientSideMouse || this.viewOnly,
+                        low_power_mode: lowPowerMode,
                         offer: btoa(JSON.stringify(this.conn.localDescription)),
                     }),
                 }).catch(e => {
