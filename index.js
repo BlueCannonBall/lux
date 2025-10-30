@@ -124,10 +124,10 @@ class SetupWindow {
     constructor() {
         this.inner = document.createElement("form");
 
-        this.titleHeading = document.createElement("h1");
-        this.titleHeading.style.marginTop = "var(--pico-typography-spacing-vertical)";
-        this.titleHeading.innerHTML = `<img src="icon.png" style="margin-right: 5px; display: inline-block; width: 60px; vertical-align: -15px;"> Lux Client`;
-        this.inner.appendChild(this.titleHeading);
+        const titleHeading = document.createElement("h1");
+        titleHeading.style.marginTop = "var(--pico-typography-spacing-vertical)";
+        titleHeading.innerHTML = `<img src="icon.png" style="margin-right: 5px; display: inline-block; width: 60px; vertical-align: -15px;"> Lux Client`;
+        this.inner.appendChild(titleHeading);
 
         this.addressInput = document.createElement("input");
         this.addressInput.type = "text";
@@ -183,10 +183,10 @@ class SetupWindow {
             this.inner.appendChild(this.mouseSensitivityRange.inner);
         }
 
-        this.submitButton = document.createElement("button");
-        this.submitButton.type = "submit";
-        this.submitButton.innerText = "Login";
-        this.inner.appendChild(this.submitButton);
+        const submitButton = document.createElement("button");
+        submitButton.type = "submit";
+        submitButton.innerText = "Login";
+        this.inner.appendChild(submitButton);
 
         // this.windowSizeLabel = document.createElement("p");
         // this.windowSizeLabel.innerText = `${window.innerWidth}x${window.innerHeight}`;
