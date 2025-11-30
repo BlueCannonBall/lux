@@ -400,37 +400,26 @@ class VideoWindow {
 
         this.conn.addEventListener("icecandidate", async event => {
             if (!event.candidate) {
-                const payload = !url.searchParams.has("key") ? {
-                    password,
-                    show_mouse: !this.clientSideMouse || this.viewOnly,
-                    low_power_mode: lowPowerMode,
-                    offer: btoa(JSON.stringify(this.conn.localDescription)),
-                } : {
-                    key: url.searchParams.get("key"),
-                    show_mouse: !this.clientSideMouse || this.viewOnly,
-                    low_power_mode: lowPowerMode,
-                    offer: btoa(JSON.stringify(this.conn.localDescription)),
-                };
-
-                const tryFetch = async protocol => {
-                    const endpoint = `${protocol}://${address}/offer`;
-                    try {
-                        const resp = await fetch(endpoint, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(payload),
-                        });
-                        if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
-                        return resp;
-                    } catch (err) {
-                        console.warn(`Failed with ${protocol.toUpperCase()}:`, err);
-                        return null;
-                    }
-                };
-
-                // Try HTTPS first, then HTTP
-                let resp = await tryFetch("https");
-                if (!resp) resp = await tryFetch("http");
+                const resp = await fetch(`https://${address}/offer`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(!url.searchParams.has("key") ? {
+                        password,
+                        show_mouse: !this.clientSideMouse || this.viewOnly,
+                        low_power_mode: lowPowerMode,
+                        offer: btoa(JSON.stringify(this.conn.localDescription)),
+                    } : {
+                        key: url.searchParams.get("key"),
+                        show_mouse: !this.clientSideMouse || this.viewOnly,
+                        low_power_mode: lowPowerMode,
+                        offer: btoa(JSON.stringify(this.conn.localDescription)),
+                    }),
+                }).catch(e => {
+                    alert(`Error: ${e}`);
+                    window.location.href = window.location.origin + window.location.pathname;
+                });
 
                 if (resp.status === 200) {
                     const answer = await resp.text();

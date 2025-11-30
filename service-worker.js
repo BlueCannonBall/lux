@@ -1,4 +1,4 @@
-const CACHE_NAME = "static-cache-v2";
+const CACHE_NAME = "static-cache-v3";
 const ASSETS_TO_CACHE = [
     "/",
     "/index.html",
@@ -29,7 +29,7 @@ self.addEventListener("activate", event => {
             )
         )
     );
-    self.clients.claim();
+    event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener("fetch", (event) => {
