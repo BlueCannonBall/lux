@@ -188,9 +188,9 @@ class SetupWindow {
         submitButton.innerText = "Login";
         this.inner.appendChild(submitButton);
 
-        // this.windowSizeLabel = document.createElement("p");
-        // this.windowSizeLabel.innerText = `${window.innerWidth}x${window.innerHeight}`;
-        // this.inner.appendChild(this.windowSizeLabel);
+        const windowSizeLabel = document.createElement("p");
+        windowSizeLabel.innerText = `${window.innerWidth}x${window.innerHeight}`;
+        this.inner.appendChild(windowSizeLabel);
 
         this.inner.addEventListener("submit", this.handleSubmit.bind(this), {
             passive: false,
