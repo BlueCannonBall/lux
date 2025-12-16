@@ -799,8 +799,8 @@ class VideoWindow {
                     if (movedTouches[0].id === this.touches[0].id && this.touches.every(touch => now - touch.startTime >= 25)) {
                         const message = {
                             type: "wheel",
-                            x: Math.round(movedTouches[0].clientX - this.touches[0].clientX) * (this.naturalTouchScrolling ? -1 : 1) * 8,
-                            y: Math.round(movedTouches[0].clientY - this.touches[0].clientY) * (this.naturalTouchScrolling ? -1 : 1) * 8,
+                            x: Math.round((movedTouches[0].clientX - this.touches[0].clientX) * (this.naturalTouchScrolling ? -1 : 1) * 6),
+                            y: Math.round((movedTouches[0].clientY - this.touches[0].clientY) * (this.naturalTouchScrolling ? -1 : 1) * 6),
                         };
                         this.sendUnordered(message);
                     }
