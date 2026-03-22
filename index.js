@@ -265,6 +265,12 @@ class VideoWindow {
         this.lastRightClickTime = 0;
 
         this.currentPenStroke = [];
+        this.drawPending = false;
+
+        this.cachedVideoWidth = 1;
+        this.cachedVideoHeight = 1;
+        this.cachedCanvasWidth = 1;
+        this.cachedCanvasHeight = 1;
 
         this.inner.style.width = "100%";
         this.inner.style.height = "100%";
@@ -328,6 +334,10 @@ class VideoWindow {
                 this.video.playsInline = true;
                 this.video.srcObject = event.streams[0];
                 this.video.play(); // Autoplay is buggy
+                this.video.addEventListener("resize", () => {
+                    this.cachedVideoWidth = this.video.videoWidth || 1;
+                    this.cachedVideoHeight = this.video.videoHeight || 1;
+                });
 
                 this.canvas = document.createElement("canvas");
                 this.ctx = this.canvas.getContext("2d");
@@ -349,7 +359,7 @@ class VideoWindow {
                         if (this.simulateTouchpad) {
                             this.mouseImage = new Image();
                             this.mouseImage.src = "mouse.png";
-                            this.mouseImage.onload = this.draw.bind(this);
+                            this.mouseImage.onload = this.scheduleDraw.bind(this);
                         }
                         document.addEventListener("contextmenu", event => event.preventDefault());
                     }
@@ -373,6 +383,7 @@ class VideoWindow {
                 this.video.style.flex = "1";
                 this.video.style.userSelect = "none";
                 this.video.style.webkitUserSelect = "none";
+                this.video.style.transform = "translateZ(0)";
 
                 this.canvas.style.position = "absolute";
                 this.canvas.style.top = "0";
@@ -381,6 +392,7 @@ class VideoWindow {
                 this.canvas.style.height = "100%";
                 this.canvas.style.userSelect = "none";
                 this.canvas.style.webkitUserSelect = "none";
+                this.canvas.style.transform = "translateZ(0)";
 
                 this.inner.innerText = "";
                 this.inner.ariaBusy = false;
@@ -465,30 +477,38 @@ class VideoWindow {
     }
 
     positionInVideo(x, y) {
-        const videoAspectRatio = this.video.videoWidth / this.video.videoHeight;
-        const windowAspectRatio = this.canvas.clientWidth / this.canvas.clientHeight;
-        if (videoAspectRatio > windowAspectRatio) {
+        const vw = this.cachedVideoWidth;
+        const vh = this.cachedVideoHeight;
+        const cw = this.cachedCanvasWidth;
+        const ch = this.cachedCanvasHeight;
+
+        if (vw * ch > cw * vh) {
             return {
-                x: Math.round(x / (this.canvas.clientWidth / this.video.videoWidth)),
-                y: Math.round((y - ((1 - windowAspectRatio / videoAspectRatio) * this.canvas.clientHeight) / 2) / (this.canvas.clientWidth / this.video.videoWidth)),
-            };
-        } else if (videoAspectRatio < windowAspectRatio) {
-            return {
-                x: Math.round((x - ((1 - videoAspectRatio / windowAspectRatio) * this.canvas.clientWidth) / 2) / (this.canvas.clientHeight / this.video.videoHeight)),
-                y: Math.round(y / (this.canvas.clientHeight / this.video.videoHeight)),
+                x: Math.round(x * vw / cw),
+                y: Math.round((y - ch / 2) * vw / cw + vh / 2),
             };
         } else {
             return {
-                x: Math.round(x / (this.canvas.clientWidth / this.video.videoWidth)),
-                y: Math.round(y / (this.canvas.clientHeight / this.video.videoHeight)),
+                x: Math.round((x - cw / 2) * vh / ch + vw / 2),
+                y: Math.round(y * vh / ch),
             };
         }
     }
 
     moveVirtualMouse(x, y) {
-        this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), this.canvas.clientWidth - 1);
-        this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), this.canvas.clientHeight - 1);
-        this.draw();
+        this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), this.cachedCanvasWidth - 1);
+        this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), this.cachedCanvasHeight - 1);
+        this.scheduleDraw();
+    }
+
+    scheduleDraw() {
+        if (!this.drawPending) {
+            this.drawPending = true;
+            requestAnimationFrame(() => {
+                this.draw();
+                this.drawPending = false;
+            });
+        }
     }
 
     draw() {
@@ -910,7 +930,7 @@ class VideoWindow {
             };
             if (!shallowEqual(message, this.lastPenMessage)) {
                 this.currentPenStroke = [];
-                this.draw();
+                this.scheduleDraw();
 
                 this.sendOrdered(message);
                 this.lastPenMessage = message;
@@ -964,7 +984,7 @@ class VideoWindow {
 
                     this.sendOrdered(message);
                 }
-                this.draw();
+                this.scheduleDraw();
 
                 this.lastPenMessage = message;
             }
@@ -975,12 +995,19 @@ class VideoWindow {
         this.canvas.width = this.canvas.clientWidth * window.devicePixelRatio;
         this.canvas.height = this.canvas.clientHeight * window.devicePixelRatio;
 
+        this.cachedCanvasWidth = this.canvas.clientWidth || 1;
+        this.cachedCanvasHeight = this.canvas.clientHeight || 1;
+        if (this.video) {
+            this.cachedVideoWidth = this.video.videoWidth || 1;
+            this.cachedVideoHeight = this.video.videoHeight || 1;
+        }
+
         if (!this.viewOnly) {
             if (this.clientSideMouse && this.simulateTouchpad) {
-                this.virtualMouseX = Math.min(this.virtualMouseX, this.canvas.clientWidth - 1);
-                this.virtualMouseY = Math.min(this.virtualMouseY, this.canvas.clientHeight - 1);
+                this.virtualMouseX = Math.min(this.virtualMouseX, this.cachedCanvasWidth - 1);
+                this.virtualMouseY = Math.min(this.virtualMouseY, this.cachedCanvasHeight - 1);
             }
-            this.draw();
+            this.scheduleDraw();
         }
     }
 }
