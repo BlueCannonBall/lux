@@ -1,4 +1,4 @@
-const CACHE_NAME = "static-cache-v7";
+const CACHE_NAME = "static-cache";
 const ASSETS_TO_CACHE = [
     "/",
     "/index.html",
@@ -33,8 +33,26 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", (event) => {
+    // Only handle HTTP and HTTPS GET requests
+    if (event.request.method !== "GET" || !event.request.url.startsWith("http")) {
+        return;
+    }
+
     event.respondWith(
-        caches.match(event.request)
-            .then(cachedResponse => cachedResponse || fetch(event.request))
+        fetch(event.request)
+            .then((networkResponse) => {
+                // Update the cache only if the response is a successful one
+                if (networkResponse && (networkResponse.status === 200 || networkResponse.type === "opaque")) {
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseClone);
+                    });
+                }
+                return networkResponse;
+            })
+            .catch(() => {
+                // Fallback to cached response when offline
+                return caches.match(event.request);
+            })
     );
 });
