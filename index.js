@@ -339,8 +339,10 @@ class VideoWindow {
                     this.cachedVideoHeight = this.video.videoHeight || 1;
                 });
 
-                this.canvas = document.createElement("canvas");
-                this.ctx = this.canvas.getContext("2d");
+                if (!this.viewOnly) {
+                    this.canvas = document.createElement("canvas");
+                    this.ctx = this.canvas.getContext("2d");
+                }
 
                 if (!this.viewOnly) {
                     if (!this.clientSideMouse) {
@@ -385,14 +387,16 @@ class VideoWindow {
                 this.video.style.webkitUserSelect = "none";
                 this.video.style.transform = "translateZ(0)";
 
-                this.canvas.style.position = "absolute";
-                this.canvas.style.top = "0";
-                this.canvas.style.left = "0";
-                this.canvas.style.width = "100%";
-                this.canvas.style.height = "100%";
-                this.canvas.style.userSelect = "none";
-                this.canvas.style.webkitUserSelect = "none";
-                this.canvas.style.transform = "translateZ(0)";
+                if (!this.viewOnly) {
+                    this.canvas.style.position = "absolute";
+                    this.canvas.style.top = "0";
+                    this.canvas.style.left = "0";
+                    this.canvas.style.width = "100%";
+                    this.canvas.style.height = "100%";
+                    this.canvas.style.userSelect = "none";
+                    this.canvas.style.webkitUserSelect = "none";
+                    this.canvas.style.transform = "translateZ(0)";
+                }
 
                 this.inner.innerText = "";
                 this.inner.ariaBusy = false;
@@ -400,7 +404,7 @@ class VideoWindow {
                 this.inner.style.removeProperty("align-items");
 
                 this.inner.appendChild(this.video);
-                this.inner.appendChild(this.canvas);
+                if (!this.viewOnly) this.inner.appendChild(this.canvas);
                 this.handleResize();
             } else if (event.track.kind === "audio") {
                 this.audio = media;
@@ -992,11 +996,13 @@ class VideoWindow {
     }
 
     handleResize() {
-        this.canvas.width = this.canvas.clientWidth * window.devicePixelRatio;
-        this.canvas.height = this.canvas.clientHeight * window.devicePixelRatio;
+        if (this.canvas) {
+            this.canvas.width = this.canvas.clientWidth * window.devicePixelRatio;
+            this.canvas.height = this.canvas.clientHeight * window.devicePixelRatio;
 
-        this.cachedCanvasWidth = this.canvas.clientWidth || 1;
-        this.cachedCanvasHeight = this.canvas.clientHeight || 1;
+            this.cachedCanvasWidth = this.canvas.clientWidth || 1;
+            this.cachedCanvasHeight = this.canvas.clientHeight || 1;
+        }
         if (this.video) {
             this.cachedVideoWidth = this.video.videoWidth || 1;
             this.cachedVideoHeight = this.video.videoHeight || 1;
