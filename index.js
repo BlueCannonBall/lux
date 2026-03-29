@@ -332,6 +332,7 @@ class VideoWindow {
                 this.video = media;
                 this.video.controls = false;
                 this.video.playsInline = true;
+                this.video.muted = true;
                 this.video.srcObject = event.streams[0];
                 this.video.play(); // Autoplay is buggy
                 this.video.addEventListener("resize", () => {
