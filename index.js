@@ -305,8 +305,7 @@ class VideoWindow {
 
         this.conn.addEventListener("iceconnectionstatechange", event => {
             if (this.conn.iceConnectionState === "closed" ||
-                this.conn.iceConnectionState === "failed" ||
-                this.conn.iceConnectionState === "disconnected") {
+                this.conn.iceConnectionState === "failed") {
                 if (!url.searchParams.has("key")) {
                     url.searchParams.set("reconnect", "true");
                     window.location.href = url.toString();
@@ -333,7 +332,8 @@ class VideoWindow {
                 this.video.controls = false;
                 this.video.playsInline = true;
                 this.video.muted = true;
-                this.video.srcObject = event.streams[0];
+                this.video.autoplay = true;
+                this.video.srcObject = event.streams[0] || new MediaStream([event.track]);
                 this.video.play(); // Autoplay is buggy
                 this.video.addEventListener("resize", () => {
                     this.cachedVideoWidth = this.video.videoWidth || 1;
@@ -410,7 +410,8 @@ class VideoWindow {
             } else if (event.track.kind === "audio") {
                 this.audio = media;
                 this.audio.controls = false;
-                this.audio.srcObject = event.streams[0];
+                this.audio.autoplay = true;
+                this.audio.srcObject = event.streams[0] || new MediaStream([event.track]);
                 this.audio.play(); // Autoplay is buggy
             }
         });
@@ -443,6 +444,7 @@ class VideoWindow {
                     try {
                         const desc = JSON.parse(atob(JSON.parse(answer).Offer));
                         console.log("Remote descripton:", desc);
+                        desc.sdp = desc.sdp.replace(/typ srflx tcptype (passive|active)/g, "typ host tcptype $1"); // Firefox is garbage!
                         desc.sdp = desc.sdp.replace("useinbandfec=1", "useinbandfec=0;stereo=1");
                         this.conn.setRemoteDescription(new RTCSessionDescription(desc));
                     } catch (e) {
