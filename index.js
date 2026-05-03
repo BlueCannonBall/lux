@@ -265,7 +265,6 @@ class VideoWindow {
         this.lastRightClickTime = 0;
 
         this.currentPenStroke = [];
-        this.drawPending = false;
 
         this.cachedVideoWidth = 1;
         this.cachedVideoHeight = 1;
@@ -362,7 +361,7 @@ class VideoWindow {
                         if (this.simulateTouchpad) {
                             this.mouseImage = new Image();
                             this.mouseImage.src = "mouse.png";
-                            this.mouseImage.onload = this.scheduleDraw.bind(this);
+                            this.mouseImage.onload = this.draw.bind(this);
                         }
                         document.addEventListener("contextmenu", event => event.preventDefault());
                     }
@@ -503,17 +502,7 @@ class VideoWindow {
     moveVirtualMouse(x, y) {
         this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), this.cachedCanvasWidth - 1);
         this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), this.cachedCanvasHeight - 1);
-        this.scheduleDraw();
-    }
-
-    scheduleDraw() {
-        if (!this.drawPending) {
-            this.drawPending = true;
-            requestAnimationFrame(() => {
-                this.draw();
-                this.drawPending = false;
-            });
-        }
+        this.draw();
     }
 
     draw() {
@@ -682,7 +671,7 @@ class VideoWindow {
             }
         } else {
             for (const touch of newTouches) {
-                if (touch.radiusX <= 75 && touch.radiusY <= 75) {
+                if (touch.radiusX <= 60 && touch.radiusY <= 60) {
                     this.pushTouch(touch);
 
                     const message = {
@@ -935,7 +924,7 @@ class VideoWindow {
             };
             if (!shallowEqual(message, this.lastPenMessage)) {
                 this.currentPenStroke = [];
-                this.scheduleDraw();
+                this.draw();
 
                 this.sendOrdered(message);
                 this.lastPenMessage = message;
@@ -989,7 +978,7 @@ class VideoWindow {
 
                     this.sendOrdered(message);
                 }
-                this.scheduleDraw();
+                this.draw();
 
                 this.lastPenMessage = message;
             }
@@ -1014,7 +1003,7 @@ class VideoWindow {
                 this.virtualMouseX = Math.min(this.virtualMouseX, this.cachedCanvasWidth - 1);
                 this.virtualMouseY = Math.min(this.virtualMouseY, this.cachedCanvasHeight - 1);
             }
-            this.scheduleDraw();
+            this.draw();
         }
     }
 }
