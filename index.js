@@ -849,15 +849,12 @@ class VideoWindow {
             }
         } else {
             for (const movedTouch of movedTouches) {
-                let touch;
-                if (touch = this.touches.find(touch => touch.id === movedTouch.id)) {
-                    const message = {
-                        type: "touchmove",
-                        id: Math.abs(touch.id) % 10,
-                        ...this.positionInVideo(touch.clientX, touch.clientY),
-                    };
-                    this.sendOrdered(message);
-                }
+                const message = {
+                    type: "touchmove",
+                    id: Math.abs(movedTouch.id) % 10,
+                    ...this.positionInVideo(movedTouch.clientX, movedTouch.clientY),
+                };
+                this.sendOrdered(message);
             }
         }
 
