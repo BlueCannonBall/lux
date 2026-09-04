@@ -1019,6 +1019,7 @@ if (url.searchParams.get("reconnect") === "true") {
         localStorage.getItem("address"),
         localStorage.getItem("password"),
         localStorage.getItem("tcp_connectivity") === "true",
+        localStorage.getItem("low_power_mode") === "true",
     );
     document.body.appendChild(videoWindow.inner);
 } else {
