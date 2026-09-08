@@ -261,6 +261,11 @@ class VideoWindow {
 
         this.currentPenStroke = [];
 
+        this.cachedVideoWidth = 1;
+        this.cachedVideoHeight = 1;
+        this.cachedCanvasWidth = 1;
+        this.cachedCanvasHeight = 1;
+
         this.inner.style.width = "100%";
         this.inner.style.height = "100%";
         this.inner.style.position = "relative";
@@ -275,10 +280,8 @@ class VideoWindow {
 
     attachEventListeners() {
         this.listen(this.video, "resize", () => {
-            const hasVideoSize = this.video.videoWidth > 0 && this.video.videoHeight > 0;
-            if (this.canvas) {
-                this.canvas.style.pointerEvents = hasVideoSize && this.canvas.width && this.canvas.height ? "auto" : "none";
-            }
+            this.cachedVideoWidth = this.video.videoWidth || 1;
+            this.cachedVideoHeight = this.video.videoHeight || 1;
         });
         this.listen(window, "resize", this.handleResize);
 
@@ -301,9 +304,9 @@ class VideoWindow {
         this.listen(document, "wheel", this.handleWheel, { passive: false });
         this.listen(document, "keydown", this.handleKeyDown);
         this.listen(document, "keyup", this.handleKeyUp);
-        this.listen(this.canvas, "touchstart", event => event.preventDefault(), { passive: false });
-        this.listen(this.canvas, "touchend", event => event.preventDefault(), { passive: false });
-        this.listen(this.canvas, "touchmove", event => event.preventDefault(), { passive: false });
+        this.listen(this.canvas, "touchstart", event => event.preventDefault());
+        this.listen(this.canvas, "touchend", event => event.preventDefault());
+        this.listen(this.canvas, "touchmove", event => event.preventDefault());
         this.listen(this.canvas, "pointerdown", this.handlePointerDown);
         this.listen(this.canvas, "pointerup", this.handlePointerUp);
         this.listen(this.canvas, "pointercancel", this.handlePointerCancel);
@@ -384,7 +387,6 @@ class VideoWindow {
                     this.canvas.style.left = "0";
                     this.canvas.style.width = "100%";
                     this.canvas.style.height = "100%";
-                    this.canvas.style.pointerEvents = "none";
                     this.canvas.style.touchAction = "none";
                     this.canvas.style.userSelect = "none";
                     this.canvas.style.webkitUserSelect = "none";
@@ -504,12 +506,10 @@ class VideoWindow {
     }
 
     positionInVideo(x, y) {
-        const vw = this.video.videoWidth;
-        const vh = this.video.videoHeight;
-        const cw = this.canvas.width / window.devicePixelRatio;
-        const ch = this.canvas.height / window.devicePixelRatio;
-
-        if (!vw || !vh || !cw || !ch) return null;
+        const vw = this.cachedVideoWidth;
+        const vh = this.cachedVideoHeight;
+        const cw = this.cachedCanvasWidth;
+        const ch = this.cachedCanvasHeight;
 
         if (vw * ch > cw * vh) {
             return {
@@ -525,10 +525,8 @@ class VideoWindow {
     }
 
     moveVirtualMouse(x, y) {
-        const canvasWidth = this.canvas.width / window.devicePixelRatio;
-        const canvasHeight = this.canvas.height / window.devicePixelRatio;
-        this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), canvasWidth - 1);
-        this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), canvasHeight - 1);
+        this.virtualMouseX = Math.min(Math.max(this.virtualMouseX + x, 0), this.cachedCanvasWidth - 1);
+        this.virtualMouseY = Math.min(Math.max(this.virtualMouseY + y, 0), this.cachedCanvasHeight - 1);
         this.draw();
     }
 
@@ -607,12 +605,9 @@ class VideoWindow {
 
     handleMouseMove(event) {
         if (this.clientSideMouse) {
-            const position = this.positionInVideo(event.clientX, event.clientY);
-            if (!position) return;
-
             const message = {
                 type: "mousemoveabs",
-                ...position,
+                ...this.positionInVideo(event.clientX, event.clientY),
             };
             this.sendOrdered(message);
         } else {
@@ -897,13 +892,7 @@ class VideoWindow {
     }
 
     handlePointerDown(event) {
-        if (event.pointerType !== "mouse") {
-            event.preventDefault();
-        }
-
         if (event.pointerType === "touch") {
-            if (!this.positionInVideo(event.clientX, event.clientY)) return;
-
             this.handleTouchStart([{
                 id: event.pointerId,
                 clientX: event.clientX,
@@ -914,15 +903,12 @@ class VideoWindow {
         } else if (event.pointerType === "pen") {
             this.clearTouches();
 
-            const position = this.positionInVideo(event.clientX, event.clientY);
-            if (!position) return;
-
             // Pen input on iOS is ASTOUNDINGLY BROKEN!
             // Safari gives you TWO of every pen-related event, so they must be deduplicated
             // MANY SUCH CASES - see comments in Tenebra's input code
             const message = {
                 type: "pen",
-                ...position,
+                ...this.positionInVideo(event.clientX, event.clientY),
                 pressure: Math.max(event.pressure, 0.001),
                 tiltX: Math.round(event.tiltX),
                 tiltY: Math.round(event.tiltY),
@@ -943,11 +929,6 @@ class VideoWindow {
 
     handlePointerUp(event) {
         if (event.pointerType === "touch") {
-            if (!this.positionInVideo(event.clientX, event.clientY)) {
-                this.handlePointerCancel(event);
-                return;
-            }
-
             this.handleTouchEnd([{
                 id: event.pointerId,
                 clientX: event.clientX,
@@ -956,20 +937,17 @@ class VideoWindow {
                 radiusY: event.height / 2,
             }]);
         } else if (event.pointerType === "pen") {
-            const position = this.positionInVideo(event.clientX, event.clientY) || this.lastPenMessage;
-            this.currentPenStroke = [];
-            this.draw();
-            if (!position) return;
-
             const message = {
                 type: "pen",
-                x: position.x,
-                y: position.y,
+                ...this.positionInVideo(event.clientX, event.clientY),
                 pressure: 0,
                 tiltX: Math.round(event.tiltX),
                 tiltY: Math.round(event.tiltY),
             };
             if (!shallowEqual(message, this.lastPenMessage)) {
+                this.currentPenStroke = [];
+                this.draw();
+
                 this.sendOrdered(message);
                 this.lastPenMessage = message;
             }
@@ -1005,8 +983,6 @@ class VideoWindow {
 
     handlePointerMove(event) {
         if (event.pointerType === "touch") {
-            if (!this.positionInVideo(event.clientX, event.clientY)) return;
-
             this.handleTouchMove([{
                 id: event.pointerId,
                 clientX: event.clientX,
@@ -1017,12 +993,9 @@ class VideoWindow {
         } else if (event.pointerType === "pen") {
             this.clearTouches(false);
 
-            const position = this.positionInVideo(event.clientX, event.clientY);
-            if (!position) return;
-
             const message = {
                 type: "pen",
-                ...position,
+                ...this.positionInVideo(event.clientX, event.clientY),
                 pressure: Math.max(event.pressure, 0.001),
                 tiltX: Math.round(event.tiltX),
                 tiltY: Math.round(event.tiltY),
@@ -1062,27 +1035,22 @@ class VideoWindow {
     }
 
     handleResize() {
-        let canvasWidth = 0;
-        let canvasHeight = 0;
-        let hasCanvasSize = false;
         if (this.canvas) {
-            canvasWidth = this.canvas.clientWidth;
-            canvasHeight = this.canvas.clientHeight;
-            hasCanvasSize = canvasWidth > 0 && canvasHeight > 0;
+            this.canvas.width = this.canvas.clientWidth * window.devicePixelRatio;
+            this.canvas.height = this.canvas.clientHeight * window.devicePixelRatio;
 
-            this.canvas.width = canvasWidth * window.devicePixelRatio;
-            this.canvas.height = canvasHeight * window.devicePixelRatio;
-
+            this.cachedCanvasWidth = this.canvas.clientWidth || 1;
+            this.cachedCanvasHeight = this.canvas.clientHeight || 1;
         }
-        const hasVideoSize = this.video?.videoWidth > 0 && this.video.videoHeight > 0;
-        if (this.canvas) {
-            this.canvas.style.pointerEvents = hasVideoSize && hasCanvasSize ? "auto" : "none";
+        if (this.video) {
+            this.cachedVideoWidth = this.video.videoWidth || 1;
+            this.cachedVideoHeight = this.video.videoHeight || 1;
         }
 
         if (!this.viewOnly) {
-            if (this.clientSideMouse && this.simulateTouchpad && hasCanvasSize) {
-                this.virtualMouseX = Math.min(this.virtualMouseX, canvasWidth - 1);
-                this.virtualMouseY = Math.min(this.virtualMouseY, canvasHeight - 1);
+            if (this.clientSideMouse && this.simulateTouchpad) {
+                this.virtualMouseX = Math.min(this.virtualMouseX, this.cachedCanvasWidth - 1);
+                this.virtualMouseY = Math.min(this.virtualMouseY, this.cachedCanvasHeight - 1);
             }
             this.draw();
         }
