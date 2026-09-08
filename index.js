@@ -292,15 +292,18 @@ class VideoWindow {
                 this.listen(this.mouseImage, "load", this.draw, { once: true });
                 this.mouseImage.src = "mouse.png";
             }
-            this.listen(this.canvas, "contextmenu", event => event.preventDefault());
+            this.listen(document, "contextmenu", event => event.preventDefault());
         }
 
         this.listen(this.canvas, "mousemove", this.handleMouseMove);
         this.listen(this.canvas, "mousedown", this.handleMouseDown);
         this.listen(this.canvas, "mouseup", this.handleMouseUp);
-        this.listen(this.canvas, "wheel", this.handleWheel, { passive: false });
+        this.listen(document, "wheel", this.handleWheel, { passive: false });
         this.listen(document, "keydown", this.handleKeyDown);
         this.listen(document, "keyup", this.handleKeyUp);
+        this.listen(this.canvas, "touchstart", event => event.preventDefault(), { passive: false });
+        this.listen(this.canvas, "touchend", event => event.preventDefault(), { passive: false });
+        this.listen(this.canvas, "touchmove", event => event.preventDefault(), { passive: false });
         this.listen(this.canvas, "pointerdown", this.handlePointerDown);
         this.listen(this.canvas, "pointerup", this.handlePointerUp);
         this.listen(this.canvas, "pointercancel", this.handlePointerCancel);
@@ -323,7 +326,7 @@ class VideoWindow {
             }
         }
 
-        this.conn = new RTCPeerConnection({
+        const conn = new RTCPeerConnection({
             iceServers: [
                 {
                     urls: "stun:stun.l.google.com:19302",
@@ -331,9 +334,9 @@ class VideoWindow {
             ],
         });
 
-        this.listen(this.conn, "iceconnectionstatechange", () => {
-            if (this.conn.iceConnectionState === "closed" ||
-                this.conn.iceConnectionState === "failed") {
+        this.listen(conn, "iceconnectionstatechange", () => {
+            if (conn.iceConnectionState === "closed" ||
+                conn.iceConnectionState === "failed") {
                 if (!url.searchParams.has("key")) {
                     url.searchParams.set("reconnect", "true");
                     window.location.href = url.toString();
@@ -345,15 +348,15 @@ class VideoWindow {
         });
 
         if (!this.viewOnly) {
-            this.orderedChannel = this.conn.createDataChannel("ordered-input", {
+            this.orderedChannel = conn.createDataChannel("ordered-input", {
                 ordered: true,
             });
-            this.unorderedChannel = this.conn.createDataChannel("unordered-input", {
+            this.unorderedChannel = conn.createDataChannel("unordered-input", {
                 ordered: false,
             });
         }
 
-        this.listen(this.conn, "track", event => {
+        this.listen(conn, "track", event => {
             const media = document.createElement(event.track.kind);
             if (event.track.kind === "video") {
                 this.video = media;
@@ -406,7 +409,7 @@ class VideoWindow {
             }
         });
 
-        this.listen(this.conn, "icecandidate", async event => {
+        this.listen(conn, "icecandidate", async event => {
             if (!event.candidate) {
                 let resp;
                 try {
@@ -419,12 +422,12 @@ class VideoWindow {
                             password,
                             show_mouse: !this.clientSideMouse || this.viewOnly,
                             low_power_mode: lowPowerMode,
-                            offer: btoa(JSON.stringify(this.conn.localDescription)),
+                            offer: btoa(JSON.stringify(conn.localDescription)),
                         } : {
                             key: url.searchParams.get("key"),
                             show_mouse: !this.clientSideMouse || this.viewOnly,
                             low_power_mode: lowPowerMode,
-                            offer: btoa(JSON.stringify(this.conn.localDescription)),
+                            offer: btoa(JSON.stringify(conn.localDescription)),
                         }),
                     });
                 } catch (e) {
@@ -440,7 +443,7 @@ class VideoWindow {
                         console.log("Remote description:", desc);
                         desc.sdp = desc.sdp.replace(/typ srflx tcptype (passive|active)/g, "typ host tcptype $1"); // Firefox is garbage!
                         desc.sdp = desc.sdp.replace("useinbandfec=1", "useinbandfec=0;stereo=1");
-                        await this.conn.setRemoteDescription(new RTCSessionDescription(desc));
+                        await conn.setRemoteDescription(new RTCSessionDescription(desc));
                     } catch (e) {
                         alert(`Error: ${e}`);
                         window.location.href = window.location.origin + window.location.pathname;
@@ -460,16 +463,16 @@ class VideoWindow {
         });
 
         // Offer to receive a video track and an audio track
-        this.conn.addTransceiver("video", { direction: "recvonly" });
-        this.conn.addTransceiver("audio", { direction: "recvonly" });
+        conn.addTransceiver("video", { direction: "recvonly" });
+        conn.addTransceiver("audio", { direction: "recvonly" });
         try {
-            const offer = await this.conn.createOffer();
+            const offer = await conn.createOffer();
             const desc = {
                 type: offer.type,
                 sdp: offer.sdp.replace("useinbandfec=1", "useinbandfec=0;stereo=1"),
             };
             console.log("Local description:", desc);
-            await this.conn.setLocalDescription(new RTCSessionDescription(desc));
+            await conn.setLocalDescription(new RTCSessionDescription(desc));
         } catch (e) {
             alert(`Error: ${e}`);
             window.location.href = window.location.origin + window.location.pathname;
