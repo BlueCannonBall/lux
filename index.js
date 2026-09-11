@@ -287,15 +287,14 @@ class VideoWindow {
 
         if (this.viewOnly) return;
 
+        this.listen(document, "contextmenu", event => event.preventDefault());
+
         if (!this.clientSideMouse) {
             this.listen(this.canvas, "click", this.handleCanvasClick);
-        } else {
-            if (this.simulateTouchpad) {
-                this.mouseImage = new Image();
-                this.listen(this.mouseImage, "load", this.draw, { once: true });
-                this.mouseImage.src = "mouse.png";
-            }
-            this.listen(document, "contextmenu", event => event.preventDefault());
+        } else if (this.simulateTouchpad) {
+            this.mouseImage = new Image();
+            this.listen(this.mouseImage, "load", this.draw, { once: true });
+            this.mouseImage.src = "mouse.png";
         }
 
         this.listen(this.canvas, "mousemove", this.handleMouseMove);
@@ -390,6 +389,7 @@ class VideoWindow {
                     this.canvas.style.touchAction = "none";
                     this.canvas.style.userSelect = "none";
                     this.canvas.style.webkitUserSelect = "none";
+                    this.canvas.style.webkitTouchCallout = "none";
                 }
 
                 this.attachEventListeners();
