@@ -18,11 +18,29 @@
             margin: 0;
             padding: 0;
         }
+
+        @media (display-mode: standalone) {
+            #ios-blur-fix {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 11px;
+                pointer-events: none;
+                z-index: 2147483647;
+                background-color: #13171F;
+                -webkit-background-clip: text;
+                background-clip: text;
+            }
+        }
     </style>
     <link rel="stylesheet" href="pico.classless.min.css">
 </head>
 
 <body>
+    <!-- PWAs are BROKEN on iPadOS 27! The OS blurs the top of the app with the system status bar, ruining fullscreen remote desktop. This workaround busts the blur. -->
+    <div id="ios-blur-fix" aria-hidden="true"></div>
+
     <script src="index.js" type="text/javascript"></script>
     <script>
         if ("serviceWorker" in navigator) {
